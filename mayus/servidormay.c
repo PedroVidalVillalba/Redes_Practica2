@@ -12,7 +12,7 @@
 #include "servidor.h"
 
 
-#define MESSAGE_SIZE 100
+#define MESSAGE_SIZE 10000
 #define DEFAULT_PORT 8000
 #define DEFAULT_BACKLOG 16
 
@@ -104,17 +104,32 @@ Client listen_for_connection(Server server) {
 }
 
 void handle_connection(Server server, Client client) {
-    char message[MESSAGE_SIZE] = {0};
+    char input_buffer[MESSAGE_SIZE] = {0};
     char ipname[INET_ADDRSTRLEN];
-    ssize_t transmited_bytes;
+    char* output;
+    ssize_t received_bytes, sent_bytes;
+    int i;
 
-    snprintf(message, MESSAGE_SIZE, "Tu conexión al servidor %s:%u ha sido aceptada\n", inet_ntop(server.domain, &client.address.sin_addr, ipname, INET_ADDRSTRLEN), server.port);
+    do {
+        if ((received_bytes = recv(cliente.socket, input_buffer, MESSAGE_SIZE, 0)) < 0) {
+            perror("Error al recibir la línea de texto");
+            exit(EXIT_FAILURE);
+        }
 
-    if ((transmited_bytes = send(client.socket, message, strlen(message), 0)) < 0) {
-        perror("No se pudo enviar el mensaje");
-        exit(EXIT_FAILURE);
-    }
+        i = 0;
+        output = (char *) malloc(sizeof(char) * (strlen(input_buffer) + 1));
+        do {
+            output[i] = toupper(input[i]);
+            i++;
+        } while (input[i]);
+
+        if ((sent_bytes = send(client.socket, output, strlen(output), 0)) < 0) {
+            perror("Error al enviar la línea de texto");
+            exit(EXIT_FAILURE);
+        }
+    } while(received_bytes[0] != EOF);
 }
+
 
 void print_help(void) {}
 
