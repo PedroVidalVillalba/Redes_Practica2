@@ -1,36 +1,26 @@
-# Opciones de compilación
-CC = gcc -Wall
+# Compiler and flags
+CC = gcc
+CFLAGS = -Wall
 
-# Carpeta con las cabeceras
+# Header files directory
 HEADER_FILES_DIR = .
 
-# Opciones de compilación, indica donde están las cabeceras
-INCLUDES = -I $(HEADER_FILES_DIR)
+# Include directories
+INCLUDES = -I$(HEADER_FILES_DIR)
 
-# Archivos .h
-HEADERS = $(HEADER_FILES_DIR)/servidor.h $(HEADER_FILES_DIR)/cliente.h
-
-# Archivos fuente
+# Source files
 SRCS = servidor.c cliente.c
 
-# Ficheros objeto
-OBJS = $(SRCS:.c=.o)
+# Executable files
+EXES = $(SRCS:.c=)
 
-# Fichero ejecutable de salida
-OUT = $(SRCS:.c=)
+# Build both executables
+all: $(EXES)
 
-# Genera el ejecutable, dependencia de los .o
-$(OUT): $(OBJS)
-	$(CC) -o $@ $<
+# Link object files to create executables
+%: %.c
+	$(CC) $(CFLAGS) $< -o $@
 
-# Genera los .o necesarios, dependencia de los .c y .h
-%.o: %.c $(HEADERS)
-	$(CC) -c -o $@ $< $(INCLUDES)
-
-# Borra el ejecutable y todos los .o y de backup
-cleanall: clean
-	rm -f $(OUT)
-
-# Borra los ficheros .o y los de backup
+# Clean targets
 clean:
-	rm -f *.o 
+	rm -f $(OBJS) $(EXES)
