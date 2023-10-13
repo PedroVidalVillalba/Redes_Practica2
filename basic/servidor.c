@@ -8,10 +8,11 @@
 #include <arpa/inet.h>
 #include <string.h>
 
+
 #include "servidor.h"
 
 
-#define MESSAGE_SIZE 128
+#define MESSAGE_SIZE 100
 #define DEFAULT_PORT 8000
 #define DEFAULT_BACKLOG 16
 
@@ -29,15 +30,23 @@ int main(int argc, char** argv) {
     Client client;
     uint16_t port;
     int backlog;
+    pid_t child;
 
     process_args(argc, argv, &port, &backlog);
 
     server = create_server(AF_INET, SOCK_STREAM, 0, port, backlog);
     
     while (1) {
+    	
         client = listen_for_connection(server);
-
+        
+	child=fork();
+	
         handle_connection(server, client);
+        
+        if(child == 0){//Esto solo se ejecuta en el hijo
+		exit(EXIT_SUCCESS);
+	}
     }
 
     close(server.socket);
@@ -101,7 +110,7 @@ void handle_connection(Server server, Client client) {
 
     snprintf(message, MESSAGE_SIZE, "Tu conexión al servidor %s:%u ha sido aceptada\n", inet_ntop(server.domain, &client.address.sin_addr, ipname, INET_ADDRSTRLEN), server.port);
 
-    if ((transmited_bytes = send(client.socket, message, MESSAGE_SIZE, 0)) < 0) {
+    if ((transmited_bytes = send(client.socket, message, strlen(message), 0)) < 0) {
         perror("No se pudo enviar el mensaje");
         exit(EXIT_FAILURE);
     }

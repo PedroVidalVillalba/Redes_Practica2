@@ -21,9 +21,15 @@ int main(int argc,char **argv){
 	char server_ip[INET_ADDRSTRLEN];
     uint16_t port;
 	
+
     process_args(argc, argv, server_ip, &port);
 	client = create_client(AF_INET, SOCK_STREAM, port, server_ip);
+
+	
+	client = create_client(AF_INET, SOCK_STREAM, 7001, server_ip);
+
 	connect_to_server(client); 
+	/*sleep(3); //Apartado 1(c)*/
 	handle_data(client);
 	
 	close(client.socket);
@@ -60,13 +66,15 @@ void connect_to_server(Client client){
 void handle_data(Client client){
 		ssize_t recv_bytes=0;
 		char server_message[NUM_BYTES_RECV];
-		
-		if ((recv_bytes = recv(client.socket, server_message, NUM_BYTES_RECV,0)) < 0) {
+		while((recv_bytes = recv(client.socket, server_message, NUM_BYTES_RECV,0)) > 0){
+			printf("Mensaje recibido: %s. Han sido recibidos %ld bytes.\n", server_message, recv_bytes);
+		}
+		/*if ((recv_bytes = recv(client.socket, server_message, NUM_BYTES_RECV,0)) < 0) {
 		perror("No se recibió el mensaje");
 		exit(EXIT_FAILURE);
-		}
+		} */
 		
-		printf("Mensaje recibido: %s", server_message);
+		/*printf("Mensaje recibido: %s. Han sido recibidos %ld bytes.\n", server_message, recv_bytes);*/
 
 }
 
