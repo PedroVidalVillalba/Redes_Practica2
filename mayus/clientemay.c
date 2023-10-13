@@ -19,11 +19,12 @@ void process_args(int argc, char** argv, char* server_ip, uint16_t* port);
 int main(int argc,char **argv){
 	Client client;
 	char server_ip[INET_ADDRSTRLEN];
-    uint16_t port;
+    	uint16_t port;
 	
 
     process_args(argc, argv, server_ip, &port);
 	client = create_client(AF_INET, SOCK_STREAM, port, server_ip);
+
 
 	connect_to_server(client); 
 	/*sleep(3); //Apartado 1(c)*/
@@ -63,6 +64,9 @@ void connect_to_server(Client client){
 void handle_data(Client client){
 		ssize_t recv_bytes=0;
 		char server_message[NUM_BYTES_RECV];
+		
+		/*AQUI TENEMOS QUE ENVIAR AL SERVIDOR LA FRASE CON SEND*/
+		/*AQUI TENEMOS QUE ENVIAR AL SERVIDOR LA FRASE CON SEND*/
 		
 		while((recv_bytes = recv(client.socket, server_message, NUM_BYTES_RECV,0)) > 0){
 			printf("Mensaje recibido: %s. Han sido recibidos %ld bytes.\n", server_message, recv_bytes);
