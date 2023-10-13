@@ -3,6 +3,7 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #define NUM_BYTES_RECV 120
 

@@ -4,6 +4,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <sys/types.h>
+#include "cliente.h"
 
 typedef struct {
     int domain;
@@ -14,11 +15,6 @@ typedef struct {
     int socket;
     struct sockaddr_in address;
 } Server;
-
-typedef struct {
-    int socket;
-    struct sockaddr_in address;
-} Client;
 
 /**
  * Create the server socket, binds it and sets it as passive

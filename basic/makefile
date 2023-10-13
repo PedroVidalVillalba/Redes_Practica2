@@ -21,7 +21,7 @@ OUT = $(SRCS:.c=)
 
 # Genera el ejecutable, dependencia de los .o
 $(OUT): $(OBJS)
-	$(CC) -o $(OUT) $(OBJS)
+	$(CC) -o $@ $<
 
 # Genera los .o necesarios, dependencia de los .c y .h
 %.o: %.c $(HEADERS)
@@ -33,4 +33,4 @@ cleanall: clean
 
 # Borra los ficheros .o y los de backup
 clean:
-	rm -f *.o *.~
+	rm -f *.o 

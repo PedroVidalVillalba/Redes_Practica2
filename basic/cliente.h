@@ -1,20 +1,15 @@
-#ifndef SERVIDOR_H
-#define SERVIDOR_H
+#ifndef CLIENTE_H
+#define CLIENTE_H
 
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <sys/types.h>
+#include "servidor.h"
 
-
-
-typedef struct 
-{
-    
-  
-    struct sockaddr_in address;
+typedef struct {
     int socket;
-
-}Client;
+    struct sockaddr_in address;
+} Client;
 
 Client create_client(int domain, int service, uint16_t port, char* server_ip);
 void connect_to_server(Client client);
@@ -22,4 +17,4 @@ void handle_data(Client client);
 
 
 
-#endif /*SERVIDOR_H*/
+#endif /*CLIENTE_H*/
