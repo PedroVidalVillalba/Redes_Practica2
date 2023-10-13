@@ -25,9 +25,6 @@ int main(int argc,char **argv){
     process_args(argc, argv, server_ip, &port);
 	client = create_client(AF_INET, SOCK_STREAM, port, server_ip);
 
-	
-	client = create_client(AF_INET, SOCK_STREAM, 7001, server_ip);
-
 	connect_to_server(client); 
 	/*sleep(3); //Apartado 1(c)*/
 	handle_data(client);

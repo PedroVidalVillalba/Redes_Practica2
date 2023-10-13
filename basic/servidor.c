@@ -37,16 +37,15 @@ int main(int argc, char** argv) {
     server = create_server(AF_INET, SOCK_STREAM, 0, port, backlog);
     
     while (1) {
-    	
         client = listen_for_connection(server);
         
-	child=fork();
+        child=fork();
 	
         handle_connection(server, client);
         
         if(child == 0){//Esto solo se ejecuta en el hijo
-		exit(EXIT_SUCCESS);
-	}
+            exit(EXIT_SUCCESS);
+        }
     }
 
     close(server.socket);
