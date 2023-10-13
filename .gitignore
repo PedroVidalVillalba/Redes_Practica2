@@ -1,2 +1,7 @@
+# Ejectuables (@Esto hay que cambiarlo para no tener que ponerlos a mano)
+cliente
+servidor
+
+# Object files
 *.o
 
