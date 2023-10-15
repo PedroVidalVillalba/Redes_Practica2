@@ -14,13 +14,13 @@ SRCS = servidor.c cliente.c
 # Executable files
 EXES = $(SRCS:.c=)
 
-# Build both executables
+# # Build both executables
 all: $(EXES)
 
-# Link object files to create executables
-%: %.c
+# Build executables
+$EXES: %.c
 	$(CC) $(CFLAGS) $< -o $@
 
 # Clean targets
 clean:
-	rm -f $(OBJS) $(EXES)
+	rm -f $(EXES)
