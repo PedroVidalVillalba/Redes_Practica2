@@ -1,7 +1,9 @@
-#ifndef SERVER_SERVER_H
-#define SERVER_SERVER_H
+#ifndef SERVER_H
+#define SERVER_H
 
+#include <sys/socket.h>
 #include <sys/types.h>
+#include <netinet/in.h>
 #include "client.h"
 
 /**
@@ -9,14 +11,14 @@
  * del servidor y el socket en el que escucha peticiones.
  */
 typedef struct {
-    int domain;     /* Dominio de comunicación */
+    int socket;     /* Socket asociado al servidor en el que escuchar conexiones o atender peticiones */
+    int domain;     /* Dominio de comunicación. Especifica la familia de protocolos que se usan para la comunicación */
     int type;       /* Tipo de protocolo usado para el socket */
     int protocol;   /* Protocolo particular usado en el socket */
     uint16_t port;  /* Puerto en el que el servidor escucha peticiones (en orden de host) */
     int backlog;    /* Longitud máxima de la cola de conexiones pendientes (para sockets pasivos) */
     char* hostname; /* Nombre del equipo en el que está ejecutándose el servidor */
-    char* ip;       /* IP externa del servidor */
-    int socket;     /* Socket asociado al servidor en el que escuchar conexiones o atender peticiones */
+    char* ip;       /* IP externa del servidor (en formato textual) */
     struct sockaddr_in listen_address;  /* Estructura con el dominio de comunicación, IPs a las que atender
                                            y puerto al que está asociado el socket */
 } Server;
@@ -27,8 +29,7 @@ typedef struct {
  * Crea un servidor nuevo con un nuevo socket, le asigna un puerto y 
  * lo marca como pasivo para poder escuchar conexiones.
  *
- * @param domain    Dominio de comunicación. Especifica la familia de protocolos 
- *                  que se usan para la comunicación.
+ * @param domain    Dominio de comunicación. 
  * @param type      Tipo de protocolo usado para el socket.
  * @param protocol  Protocolo particular a usar en el socket. Normalmente solo existe
  *                  un protocolo para la combinación dominio-tipo dada, en cuyo caso se
@@ -65,6 +66,9 @@ Server create_server(int domain, int type, int protocol, uint16_t port, int back
 int listen_for_connection(Server server, Client* client);
 
 
+/* NOTA: No sé como de buena idea es incluir esta función en una cabecera,
+ * igual es mejor simplemente borrarla y que aparezca en cada uno de los programas
+ * de la forma oportuna */
 /**
  * @brief   Maneja la conexión por parte del servidor.
  * @warning Esta función no está implementada por defecto.
@@ -80,10 +84,8 @@ int listen_for_connection(Server server, Client* client);
  *                  conectado al cliente (devuelto por listen_for_connection()).
  * @param client    Cliente que solicita el servicio proporcionado por el servidor,
  *                  y que ya se encuentra conectado a él.
- *
- * @return  0 si todo sale bien; si hay un error, se devuelve -1.
  */
-int handle_connection(Server server, Client client);
+void handle_connection(Server server, Client client);
 
 
 /**
@@ -93,10 +95,8 @@ int handle_connection(Server server, Client client);
  * reservada para el servidor.
  *
  * @param server    Servidor a cerrar.
- *
- * @return  0 si todo sale bien; si hay un error, se devuelve -1.
  */
-int close_server(Server* server); 
+void close_server(Server* server); 
 
 
-#endif  /* SERVER_SERVER_H */
+#endif  /* SERVER_H */

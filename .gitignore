@@ -4,4 +4,6 @@ servidor
 
 # Object files
 *.o
+# Swap files (for vim)
+*.swp
 
