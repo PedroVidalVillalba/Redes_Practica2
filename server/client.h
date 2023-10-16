@@ -19,8 +19,8 @@ typedef struct {
     char* ip;           /* IP externa del cliente (en formato texutal) */
     char* server_ip;        /* IP del servidor al que conectarse (en formato textual) */
     uint16_t server_port;   /* Puerto en el que el servidor escucha peticiones (en orden de host) */
-    struct sockaddr_in server_address;  /* Estructura con el dominio de comunicación e 
-                                           IP y puerto del servidor al que conectarse */
+    struct sockaddr_in address;         /* Estructura con el dominio de comunicación e IP y puerto por los que se comunica el cliente */
+    struct sockaddr_in server_address;  /* Estructura con el dominio de comunicación e IP y puerto del servidor al que conectarse */
 } Client;
 
 /**
