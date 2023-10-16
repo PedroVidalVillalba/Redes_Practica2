@@ -66,28 +66,6 @@ Server create_server(int domain, int type, int protocol, uint16_t port, int back
 int listen_for_connection(Server server, Client* client);
 
 
-/* NOTA: No sé como de buena idea es incluir esta función en una cabecera,
- * igual es mejor simplemente borrarla y que aparezca en cada uno de los programas
- * de la forma oportuna */
-/**
- * @brief   Maneja la conexión por parte del servidor.
- * @warning Esta función no está implementada por defecto.
- *
- * Maneja la conexión entre el cliente y el servidor una vez establecida.
- * Ejecuta la funcionalidad de la que está encargado el servidor en esa conexión.
- * El funcionamiento de esta función es específico del servicio que se pretenda
- * prestar por parte del servidor; por tanto, no tiene implementación por defecto
- * y es responsabilidad de la aplicación que la llame el implementarla (piénsese 
- * como una función abstracta).
- *
- * @param server    Servidor encargado de manejar la conexión. Debe tener un socket
- *                  conectado al cliente (devuelto por listen_for_connection()).
- * @param client    Cliente que solicita el servicio proporcionado por el servidor,
- *                  y que ya se encuentra conectado a él.
- */
-void handle_connection(Server server, Client client);
-
-
 /**
  * @brief   Cierra el servidor.
  *

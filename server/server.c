@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <inttypes.h>
 #include <netinet/in.h>
 #include <unistd.h>
 #include <arpa/inet.h>
@@ -60,7 +59,7 @@ Server create_server(int domain, int type, int protocol, uint16_t port, int back
     }
 
     /* Guardar la IP externa del servidor.
-     * Tampoco supone un error crítico */
+     * Tampoco supone un error crítico. */
     if (!getip(buffer, BUFFER_LEN)) {
         perror("No se pudo obtener la IP externa del servidor");
     } else {
@@ -166,7 +165,7 @@ void close_server(Server* server) {
 
     /* Limpiar la estructura poniendo todos los campos a 0 */
     memset(server, 0, sizeof(Server));
-    server->socket = -1;    /* Poner un socket no válido para que se sepa que no se puede usar */
+    server->socket = -1;    /* Poner un socket no válido para que se sepa que no se puede usar ni volver a cerrar */
     
     return;
 }
