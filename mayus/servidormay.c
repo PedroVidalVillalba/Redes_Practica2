@@ -136,7 +136,7 @@ void handle_connection(Server server, Client client) {
             
           
 
-            if ((sent_bytes = send(client.socket, output, strlen(output), 0)) < 0) {
+            if ((sent_bytes = send(client.socket, output, strlen(output) + 1, 0)) < 0) {
                 perror("Error al enviar la línea de texto");
                 exit(EXIT_FAILURE);
             }

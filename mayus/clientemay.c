@@ -89,7 +89,7 @@ void handle_data(Client client, char* input_file_name, char* output_file_name){
 		    printf("Se procede a enviar el mensaje: %s\n", send_buffer);
             
 
-		    if ((transmited_bytes = send(client.socket, send_buffer, strlen(send_buffer), 0)) < 0) {
+		    if ((transmited_bytes = send(client.socket, send_buffer, strlen(send_buffer) + 1, 0)) < 0) {
                 perror("No se pudo enviar el mensaje");
                 exit(EXIT_FAILURE);
             }
