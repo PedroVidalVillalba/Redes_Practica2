@@ -13,7 +13,7 @@ typedef struct {
 
 Client create_client(int domain, int service, uint16_t port, char* server_ip);
 void connect_to_server(Client client);
-void handle_data(Client client);
+void handle_data(Client client, char* input_file_name, char* output_file_name);
 
 
 

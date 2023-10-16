@@ -8,6 +8,7 @@
 
 #define NUM_BYTES_RECV 120
 
+
 /**
  * Process the command line inputs given to main
  * @param argc  Number of arguments.
@@ -27,8 +28,7 @@ int main(int argc,char **argv){
 
 
 	connect_to_server(client); 
-	/*sleep(3); //Apartado 1(c)*/
-	handle_data(client);
+	handle_data(client, "archivo1.txt", "archivo2.txt");
 	
 	close(client.socket);
 }
@@ -61,22 +61,47 @@ void connect_to_server(Client client){
 	}
 }
 
-void handle_data(Client client){
-		ssize_t recv_bytes=0;
-		char server_message[NUM_BYTES_RECV];
+void handle_data(Client client, char* input_file_name, char* output_file_name){
+		ssize_t transmited_bytes=0, recv_bytes=0;
+		FILE *fp_input, *fp_output;
+		char send_buffer[NUM_BYTES_RECV];
+		char recv_buffer[NUM_BYTES_RECV];
 		
-		/*AQUI TENEMOS QUE ENVIAR AL SERVIDOR LA FRASE CON SEND*/
-		/*AQUI TENEMOS QUE ENVIAR AL SERVIDOR LA FRASE CON SEND*/
-		
-		while((recv_bytes = recv(client.socket, server_message, NUM_BYTES_RECV,0)) > 0){
-			printf("Mensaje recibido: %s. Han sido recibidos %ld bytes.\n", server_message, recv_bytes);
+		/*Apertura de los archivos*/
+		if((fp_input=fopen(input_file_name, "r")) < 0){
+			perror("Error en la apertura del lectura");
+			exit(EXIT_FAILURE);
 		}
-		/*if ((recv_bytes = recv(client.socket, server_message, NUM_BYTES_RECV,0)) < 0) {
-		perror("No se recibió el mensaje");
-		exit(EXIT_FAILURE);
-		} */
-		
-		/*printf("Mensaje recibido: %s. Han sido recibidos %ld bytes.\n", server_message, recv_bytes);*/
+		if((fp_output=fopen(output_file_name, "w")) < 0){
+			perror("Error en la apertura del archivo de escritura");
+			exit(EXIT_FAILURE);
+		}		
+		/*Procesamiento y envio del archivo*/
+		while(!feof(fp_input)){
+		    /*Leemos hastaa ue o que devuelve fscanf es 0, y mandamos eof en ese caso*/
+		    
+		    if((fscanf(fp_input, "%[^\r\n]%*c", send_buffer)) == EOF){/*Escaneamos la linea hasta el final del archivo*/
+		        printf("Se pone a EOF\n"); 
+		        send_buffer[0] = EOF;
+		        send_buffer[1] = '\0';
+		    }
+		    strcat(send_buffer, "");/*Metemos el caracter de terminacion de string '\0'*/
+		    printf("Se procede a enviar el mensaje: %s\n", send_buffer);
+            
+
+		    if ((transmited_bytes = send(client.socket, send_buffer, strlen(send_buffer), 0)) < 0) {
+                perror("No se pudo enviar el mensaje");
+                exit(EXIT_FAILURE);
+            }
+            /*Esperamos a recibir la linea*/
+            if((recv_bytes = recv(client.socket, recv_buffer, NUM_BYTES_RECV,0)) < 0){
+                perror("No se pudo recibir el mensaje");
+                exit(EXIT_FAILURE);                
+            }
+            printf("Recibida linea %s\n", recv_buffer);
+            fprintf(fp_output, "%s", recv_buffer);/*@Se podria usar el mismo buffer que de envio*/
+		}
+
 
 }
 

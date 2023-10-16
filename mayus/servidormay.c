@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <string.h>
+#include <ctype.h>
 
 
 #include "servidor.h"
@@ -15,6 +16,7 @@
 #define MESSAGE_SIZE 10000
 #define DEFAULT_PORT 8000
 #define DEFAULT_BACKLOG 16
+#define NUM_BYTES_RECV 120
 
 /**
  * Process the command line inputs given to main
@@ -107,27 +109,41 @@ void handle_connection(Server server, Client client) {
     char input_buffer[MESSAGE_SIZE] = {0};
     char ipname[INET_ADDRSTRLEN];
     char* output;
+    char input[NUM_BYTES_RECV];
     ssize_t received_bytes, sent_bytes;
     int i;
 
     do {
-        if ((received_bytes = recv(cliente.socket, input_buffer, MESSAGE_SIZE, 0)) < 0) {
+        
+        if ((received_bytes = recv(client.socket, input, MESSAGE_SIZE, 0)) < 0) {
             perror("Error al recibir la línea de texto");
             exit(EXIT_FAILURE);
         }
+        
+            printf("Recibida linea %s \n", input);
 
-        i = 0;
-        output = (char *) malloc(sizeof(char) * (strlen(input_buffer) + 1));
-        do {
-            output[i] = toupper(input[i]);
-            i++;
-        } while (input[i]);
+            i = 0;
+            output = (char *) malloc(sizeof(char) * (strlen(input) + 1));//@En vez de usar strlen por que nno usar received_bytes?? estamos perdiendo memoria aqui
+            do {
+                
+                output[i] = toupper((unsigned char) input[i]);
+                
+                i++;
+            } while (input[i] != '\0');
+          
+            strcat(output, "");/*Metemos el caracter de terminacion de string '\0'*/
+            printf("Se enviará el mensaje %s\n", output);
+            
+          
 
-        if ((sent_bytes = send(client.socket, output, strlen(output), 0)) < 0) {
-            perror("Error al enviar la línea de texto");
-            exit(EXIT_FAILURE);
-        }
-    } while(received_bytes[0] != EOF);
+            if ((sent_bytes = send(client.socket, output, strlen(output), 0)) < 0) {
+                perror("Error al enviar la línea de texto");
+                exit(EXIT_FAILURE);
+            }
+        
+
+       
+    } while(input[0] != EOF);
 }
 
 
