@@ -107,6 +107,7 @@ Server create_server(int domain, int type, int protocol, uint16_t port, int back
  * @param server    Servidor que poner a escuchar conexiones. Debe tener un socket
  *                  asociado marcado como pasivo.
  * @param client    Dirección en la que guardar la información del cliente conectado.
+ *                  Debe iniciarse con el campo socket a -1.
  * 
  * @return  Descriptor del nuevo socket creado para atender las peticiones del hijo.
  */
@@ -133,7 +134,8 @@ int listen_for_connection(Server server, Client* client) {
     inet_ntop(client->domain, &(client->address.sin_addr), ipname, INET_ADDRSTRLEN);
     client->ip = (char *) calloc(strlen(ipname) + 1, sizeof(char));
     strcpy(client->ip, ipname);
-    client->server_ip = server.ip;
+    client->server_ip = (char *) calloc(strlen(server.ip) + 1, sizeof(char));
+    strcpy(client->server_ip, server.ip);
     client->server_port = server.port;
 
     /* Informar de la conexión */

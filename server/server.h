@@ -60,6 +60,7 @@ Server create_server(int domain, int type, int protocol, uint16_t port, int back
  * @param server    Servidor que poner a escuchar conexiones. Debe tener un socket
  *                  asociado marcado como pasivo.
  * @param client    Dirección en la que guardar la información del cliente conectado.
+ *                  Debe iniciarse con el campo socket a -1.
  * 
  * @return  Descriptor del nuevo socket creado para atender las peticiones del hijo.
  */

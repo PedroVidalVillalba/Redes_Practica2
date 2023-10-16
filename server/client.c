@@ -120,7 +120,7 @@ void close_client(Client* client) {
     }
 
     if (client->hostname) free(client->hostname);
-    if (client->ip) free(client->server_ip);
+    if (client->ip) free(client->ip);
     if (client->server_ip) free(client->server_ip);
 
     /* Limpiar la estructura poniendo todos los campos a 0 */
