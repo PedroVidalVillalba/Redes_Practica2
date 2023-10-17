@@ -23,6 +23,7 @@ typedef struct {
     struct sockaddr_in server_address;  /* Estructura con el dominio de comunicación e IP y puerto del servidor al que conectarse */
 } Client;
 
+
 /**
  * @brief   Crea un cliente.
  *

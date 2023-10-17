@@ -4,7 +4,7 @@
 
 # Compilador y opciones de compilación
 CC = gcc
-CFLAGS = -Wall -g
+CFLAGS = -Wall -Wpedantic -g
 
 # Carpeta con las cabeceras
 HEADERS_DIR = server
@@ -49,7 +49,7 @@ MAYUS = mayus
 ## Servidor de mayúsculas
 ### Fuentes
 SRC_MAYUS_SERVER_SPECIFIC = $(MAYUS)/servidormay.c
-SRC_MAYUS_SERVER = $(SRC_MAYUS_CLIENT_SPECIFIC) $(COMMON)
+SRC_MAYUS_SERVER = $(SRC_MAYUS_SERVER_SPECIFIC) $(COMMON)
 
 ### Objetos
 OBJ_MAYUS_SERVER = $(SRC_MAYUS_SERVER:.c=.o)
