@@ -31,8 +31,7 @@ void signal_handler(int);   /* Función para gestionar las señales */
 
 int main(int argc, char** argv) {
     Server server;
-    Client client = {.socket = -1};
-    int listen_socket;
+    Client client;
     uint16_t port;
     int backlog;
     pid_t child;
@@ -48,21 +47,18 @@ int main(int argc, char** argv) {
 
     loop = 1;
     while (loop) {
-        listen_socket = server.socket;
-        server.socket = listen_for_connection(server, &client);
+        listen_for_connection(server, &client);
 
         child = fork();
 
         handle_connection(server, client);
 
-        close(server.socket);
-        server.socket = listen_socket;
+        close_client(&client);  /* Ya hemos gestionado al cliente, podemos olvidarnos de él */
 
         if (child == 0) loop = 0;   /* Que el hijo salga del bucle y termine */
     }
 
     close_server(&server);
-    close_client(&client);
 
     exit(EXIT_SUCCESS);
 }
@@ -78,7 +74,8 @@ void handle_connection(Server server, Client client) {
 
     snprintf(message, MESSAGE_SIZE, "Tu conexión al servidor %s en %s:%u ha sido aceptada\n", server.hostname, server.ip, server.port);
 
-    if ( (transmited_bytes = send(server.socket, message, strlen(message) + 1, 0)) < 0) {
+    /* Enviar el mensaje al cliente */
+    if ( (transmited_bytes = send(client.socket, message, strlen(message) + 1, 0)) < 0) {
         perror("No se pudo enviar el mensaje");
         exit(EXIT_FAILURE);
     }

@@ -53,18 +53,15 @@ Server create_server(int domain, int type, int protocol, uint16_t port, int back
  * Cuando se recibe una, se acepta, se informa de ella y se crea una nueva
  * estructura en la que guardar la información del cliente conectado, y un nuevo socket
  * conectado al cliente para atender sus peticiones.
- * El uso esperado es crear un proceso hijo para manejar esa conexión, y en ese proceso
- * hijo asignar al socket del servidor el nuevo socket asociado al cliente que devuelve
- * esta función. 
+ * Esta función no es responsable de liberar el cliente referenciado si este ya estuviese
+ * iniciado, por lo que de ser así se debe llamar a close_client antes de invocar a esta función.
  * 
  * @param server    Servidor que poner a escuchar conexiones. Debe tener un socket
  *                  asociado marcado como pasivo.
  * @param client    Dirección en la que guardar la información del cliente conectado.
- *                  Debe iniciarse con el campo socket a -1.
- * 
- * @return  Descriptor del nuevo socket creado para atender las peticiones del hijo.
+ *                  Guarda en el campo socket del cliente el nuevo socket conectado al cliente.
  */
-int listen_for_connection(Server server, Client* client);
+void listen_for_connection(Server server, Client* client);
 
 
 /**

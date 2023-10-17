@@ -86,7 +86,7 @@ Server create_server(int domain, int type, int protocol, uint16_t port, int back
     }
 
     printf("Servidor creado con éxito y listo para escuchar solicitudes de conexión.\n"
-            "Hostname: %s; IP: %s; Puerto: %d\n", server.hostname, server.ip, server.port);
+            "Hostname: %s; IP: %s; Puerto: %d\n\n", server.hostname, server.ip, server.port);
 
     return server;
 }
@@ -100,26 +100,22 @@ Server create_server(int domain, int type, int protocol, uint16_t port, int back
  * Cuando se recibe una, se acepta, se informa de ella y se crea una nueva
  * estructura en la que guardar la información del cliente conectado, y un nuevo socket
  * conectado al cliente para atender sus peticiones.
- * El uso esperado es crear un proceso hijo para manejar esa conexión, y en ese proceso
- * hijo asignar al socket del servidor el nuevo socket asociado al cliente que devuelve
- * esta función. 
+ * Esta función no es responsable de liberar el cliente referenciado si este ya estuviese
+ * iniciado, por lo que de ser así se debe llamar a close_client antes de invocar a esta función.
  * 
  * @param server    Servidor que poner a escuchar conexiones. Debe tener un socket
  *                  asociado marcado como pasivo.
  * @param client    Dirección en la que guardar la información del cliente conectado.
- *                  Debe iniciarse con el campo socket a -1.
- * 
- * @return  Descriptor del nuevo socket creado para atender las peticiones del hijo.
+ *                  Guarda en el campo socket del cliente el nuevo socket conectado al cliente.
  */
-int listen_for_connection(Server server, Client* client) {
-    int sockfd;
+void listen_for_connection(Server server, Client* client) {
     char ipname[INET_ADDRSTRLEN];
     socklen_t address_length = sizeof(struct sockaddr_in);
 
-    close_client(client);   /* Resetear el cliente en caso de que ya tuviese información */
+    memset(client, 0, sizeof(Client));  /* Inicializar los campos del cliente a 0. No se liberan campos */
 
     /* Aceptar la conexión del cliente en el socket pasivo del servidor */
-    if ( (sockfd = accept(server.socket, (struct sockaddr *) &(client->address), &address_length)) < 0) {
+    if ( (client->socket = accept(server.socket, (struct sockaddr *) &(client->address), &address_length)) < 0) {
         perror("No se pudo aceptar la conexión");
         exit(EXIT_FAILURE);
     }
@@ -139,9 +135,9 @@ int listen_for_connection(Server server, Client* client) {
     client->server_port = server.port;
 
     /* Informar de la conexión */
-    printf("Cliente conectado desde la IP %s:%u\n", client->ip, ntohs(client->address.sin_port));
+    printf("Cliente conectado desde %s:%u\n", client->ip, ntohs(client->address.sin_port));
 
-    return sockfd;
+    return;
 }
 
 
@@ -155,7 +151,7 @@ int listen_for_connection(Server server, Client* client) {
  */
 void close_server(Server* server) {
     /* Cerrar el socket del servidor */
-    if (server->socket != -1) {
+    if (server->socket >= 0) {
         if (close(server->socket)) {
             perror("No se pudo cerrar el socket del servidor");
             exit(EXIT_FAILURE);
