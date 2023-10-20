@@ -1,7 +1,8 @@
 # Ejectuables (@Esto hay que cambiarlo para no tener que ponerlos a mano)
 cliente
 servidor
-
+clientemay
+servidormay
 # Object files
 *.o
 # Swap files (for vim)
