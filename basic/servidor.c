@@ -16,12 +16,28 @@
 static int loop;    /* Para saber si seguimos iterando o hay que parar */
 
 /**
- * Process the command line inputs given to main
- * @param argc  Number of arguments.
- * @param argv  Array of strings with the program arguments.
- * @return void
+ * Estructura de datos para pasar a la función process_args.
+ * Debe contener siempre los campos int argc, char** argv, provenientes de main,
+ * y luego una cantidad variable de punteros a las variables que se quieran inicializar
+ * a partir de la entrada del programa.
  */
-void process_args(int argc, char** argv, uint16_t* port, int* backlog);
+struct arguments {
+    int argc;
+    char** argv;
+    uint16_t* port;
+    int* backlog;
+};
+
+/**
+ * @brief Procesa los argumentos del main
+ *
+ * Procesa los argumentos proporcionados al programa por línea de comandos,
+ * e inicializa las variables del programa necesarias acorde a estos.
+ *
+ * @param args  Estructura con los argumentos del programa y punteros a las variables
+ *              que necesitan inicialización.
+ */
+void process_args(struct arguments args);
 
 void handle_connection(Server server, Client client);
 
@@ -33,8 +49,14 @@ int main(int argc, char** argv) {
     uint16_t port;
     int backlog;
     pid_t child;
+    struct arguments args = {
+        .argc = argc,
+        .argv = argv,
+        .port = &port,
+        .backlog = &backlog
+    };
 
-    process_args(argc, argv, &port, &backlog);
+    process_args(args);
 
     server = create_server(AF_INET, SOCK_STREAM, 0, port, backlog);
 
@@ -83,25 +105,25 @@ void handle_connection(Server server, Client client) {
 void print_help(void) {}
 
 
-void process_args(int argc, char** argv, uint16_t* port, int* backlog) {
+void process_args(struct arguments args) {
     int i;
     char* current_arg;
 
     /* Si no se pasan argumentos, avisar y poner las opciones por defecto */
-    if (argc == 1) {        
+    if (args.argc == 1) {        
         printf("Ejecutando el servidor con las opciones por defecto: PORT=%u, BACKLOG=%d\n\n", DEFAULT_PORT, DEFAULT_BACKLOG);
-        *port = DEFAULT_PORT;
-        *backlog = DEFAULT_BACKLOG;
+        *args.port = DEFAULT_PORT;
+        *args.backlog = DEFAULT_BACKLOG;
         return;
     }
 
-    for (i = 1; i < argc; i++) { /* Procesamos los argumentos (sin contar el nombre del ejecutable) */
-        current_arg = argv[i];
+    for (i = 1; i < args.argc; i++) { /* Procesamos los argumentos (sin contar el nombre del ejecutable) */
+        current_arg = args.argv[i];
         if (current_arg[0] == '-') { /* Flag de opción */
             switch(current_arg[1]) {
                 case 'p':   /* Puerto */
-                    if (++i < argc) {
-                        *port = atoi(argv[i]);
+                    if (++i < args.argc) {
+                        *args.port = atoi(args.argv[i]);
                     } else {
                         fprintf(stderr, "Puerto no especificado tras la opción '-p'\n\n");
                         print_help();
@@ -109,8 +131,8 @@ void process_args(int argc, char** argv, uint16_t* port, int* backlog) {
                     }
                     break;
                 case 'b':   /* Backlog */
-                    if (++i < argc) {
-                        *backlog = atoi(argv[i]);
+                    if (++i < args.argc) {
+                        *args.backlog = atoi(args.argv[i]);
                     } else {
                         fprintf(stderr, "Tamaño del backlog no especificado tras la opción '-b'\n\n");
                         print_help();

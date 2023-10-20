@@ -76,7 +76,7 @@ void handle_data(Client client, char* input_file_name){
     /*Procesamiento y envio del archivo*/
     while (!feof(fp_input)) {
         /* Leemos hasta que lo que devuelve fscanf es EOF, cerramos la conexión en ese caso */
-        if( (fscanf(fp_input, "%[^\r\n]%*c", send_buffer)) == EOF){ /*Escaneamos la linea hasta el final del archivo*/
+        if( (fscanf(fp_input, "%[^\r\n]\n", send_buffer)) == EOF){ /*Escaneamos la linea hasta el final del archivo*/
             shutdown(client.socket, SHUT_RD);   /* Le decimos al servidor que pare de recibir */
             continue;
         }
