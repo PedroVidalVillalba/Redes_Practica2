@@ -29,15 +29,22 @@ struct arguments {
 };
 
 /**
- * @brief Procesa los argumentos del main
+ * @brief   Procesa los argumentos del main
  *
  * Procesa los argumentos proporcionados al programa por línea de comandos,
  * e inicializa las variables del programa necesarias acorde a estos.
  *
- * @param args  Estructura con los argumentos del programa y punteros a las variables
- *              que necesitan inicialización.
+ * @param args  Estructura con los argumentos del programa y punteros a las
+ *              variables que necesitan inicialización.
  */
-void process_args(struct arguments args);
+static void process_args(struct arguments args);
+
+/**
+ * @brief Imprime la ayuda del programa
+ *
+ * @param exe_name  Nombre del ejecutable (argv[0])
+ */
+static void print_help(char* exe_name);
 
 void handle_connection(Server server, Client client);
 
@@ -48,7 +55,6 @@ int main(int argc, char** argv) {
     Client client;
     uint16_t port;
     int backlog;
-    pid_t child;
     struct arguments args = {
         .argc = argc,
         .argv = argv,
@@ -58,7 +64,7 @@ int main(int argc, char** argv) {
 
     process_args(args);
 
-    printf("Ejecutando servidor con parámetros: PORT=%u, BACKLOG=%d\n\n", port, backlog);
+    printf("Ejecutando servidor con parámetros: PORT=%u, BACKLOG=%d.\n\n", port, backlog);
     server = create_server(AF_INET, SOCK_STREAM, 0, port, backlog);
 
     if (signal(SIGTERM, signal_handler) == SIG_ERR) {
@@ -70,16 +76,13 @@ int main(int argc, char** argv) {
     while (loop) {
         listen_for_connection(server, &client);
 
-        child = fork();
-
         handle_connection(server, client);
 
-        printf("Cerrando la conexión del cliente %s:%u\n", client.ip, ntohs(client.address.sin_port));
+        printf("\nCerrando la conexión del cliente %s:%u.\n\n", client.ip, ntohs(client.address.sin_port));
         close_client(&client);  /* Ya hemos gestionado al cliente, podemos olvidarnos de él */
-
-        if (child == 0) loop = 0;   /* Que el hijo salga del bucle y termine */
     }
 
+    printf("\nCerrando el servidor y saliendo...\n");
     close_server(&server);
 
     exit(EXIT_SUCCESS);
@@ -94,9 +97,9 @@ void handle_connection(Server server, Client client) {
     char message[MESSAGE_SIZE] = {0};
     ssize_t transmited_bytes;
 
-    printf("Manejando la conexión del cliente %s:%u...\n", client.ip, ntohs(client.address.sin_port));
+    printf("\nManejando la conexión del cliente %s:%u...\n", client.ip, ntohs(client.address.sin_port));
 
-    snprintf(message, MESSAGE_SIZE, "Tu conexión al servidor %s en %s:%u ha sido aceptada\n", server.hostname, server.ip, server.port);
+    snprintf(message, MESSAGE_SIZE, "Tu conexión al servidor %s en %s:%u ha sido aceptada.\n", server.hostname, server.ip, server.port);
 
     /* Enviar el mensaje al cliente */
     if ( (transmited_bytes = send(client.socket, message, strlen(message) + 1, 0)) < 0) {
@@ -108,7 +111,7 @@ void handle_connection(Server server, Client client) {
 
 static void print_help(char* exe_name){
     /** Cabecera y modo de ejecución **/
-    printf("Uso: %s [[-p] <port>] [-b <backlog>]\n\n", exe_name);
+    printf("Uso: %s [[-p] <port>] [-b <backlog>] [-h]\n\n", exe_name);
 
     /** Lista de opciones de uso **/
     printf(" Opción\t\tOpción larga\t\tSignificado\n");
@@ -123,7 +126,7 @@ static void print_help(char* exe_name){
 }
 
 
-void process_args(struct arguments args) {
+static void process_args(struct arguments args) {
     int i;
     char* current_arg;
 
