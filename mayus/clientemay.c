@@ -41,10 +41,11 @@ int main(int argc,char **argv){
 
 
 void handle_data(Client client, char* input_file_name){
-    ssize_t transmited_bytes = 0, recv_bytes = 0;
+    ssize_t sent_bytes = 0, recv_bytes = 0;
     FILE *fp_input, *fp_output;
-    char send_buffer[NUM_BYTES_RECV];
     char recv_buffer[NUM_BYTES_RECV];
+    size_t buffer_size; /* Necesitamos una variable con el tamaño del buffer para getline */
+    char* send_buffer;  /* Buffer para guardar las líneas del archivo a enviar. Como se usa getline, tiene que asignarse dinamicamente */
 
     /*Apertura de los archivos*/
     if ( !(fp_input = fopen(input_file_name, "r")) ) {
@@ -55,18 +56,17 @@ void handle_data(Client client, char* input_file_name){
     /*Enviamos el nombre del archivo*/
     printf("Se procede a enviar el mensaje: %s\n", input_file_name);
 
-    if ( (transmited_bytes = send(client.socket, input_file_name, strlen(input_file_name) + 1, 0)) < 0) {
+    if ( (sent_bytes = send(client.socket, input_file_name, strlen(input_file_name) + 1, 0)) < 0) {
         perror("No se pudo enviar el mensaje");
         exit(EXIT_FAILURE);
     }
     /*Esperamos a recibir la linea*/
-    if( (recv_bytes = recv(client.socket, recv_buffer, NUM_BYTES_RECV,0)) < 0){
+    if( (recv_bytes = recv(client.socket, recv_buffer, NUM_BYTES_RECV, 0)) < 0){
         perror("No se pudo recibir el mensaje");
         exit(EXIT_FAILURE);                
     }
     /*Recibido el nombre del archivo en mayúsculas*/
   
-    printf("Recibida linea %s\n", recv_buffer);
     /*Abrimos en modo escritura el archivo*/    
     if ( !(fp_output = fopen(recv_buffer, "w")) ) {
         perror("Error en la apertura del archivo de escritura");
@@ -74,17 +74,16 @@ void handle_data(Client client, char* input_file_name){
     }	
 
     /*Procesamiento y envio del archivo*/
+    /* Inicializamos el buffer de envío, en el que leeremos del archivo con getline */
+    buffer_size = NUM_BYTES_RECV;
+    send_buffer = (char *) calloc(buffer_size, sizeof(char));
     while (!feof(fp_input)) {
         /* Leemos hasta que lo que devuelve fscanf es EOF, cerramos la conexión en ese caso */
-        if( (fscanf(fp_input, "%[^\r\n]\n", send_buffer)) == EOF){ /*Escaneamos la linea hasta el final del archivo*/
+        if(getline(&send_buffer, &buffer_size, fp_input) == EOF){ /*Escaneamos la linea hasta el final del archivo*/
             shutdown(client.socket, SHUT_RD);   /* Le decimos al servidor que pare de recibir */
             continue;
         }
-
-        
-        printf("Se procede a enviar el mensaje: %s\n", send_buffer);
-
-        if ( (transmited_bytes = send(client.socket, send_buffer, strlen(send_buffer) + 1, 0)) < 0) {
+        if ( (sent_bytes = send(client.socket, send_buffer, strlen(send_buffer) + 1, 0)) < 0) {
             perror("No se pudo enviar el mensaje");
             exit(EXIT_FAILURE);
         }
@@ -93,8 +92,7 @@ void handle_data(Client client, char* input_file_name){
             perror("No se pudo recibir el mensaje");
             exit(EXIT_FAILURE);                
         }
-        printf("Recibida linea %s\n", recv_buffer);
-        fprintf(fp_output, "%s\n", recv_buffer);/*@Se podria usar el mismo buffer que de envio*/
+        fprintf(fp_output, "%s", recv_buffer);
     }
     
     /* Cerramos los archivos al salir */
@@ -106,6 +104,7 @@ void handle_data(Client client, char* input_file_name){
         perror("No se pudo cerrar el archivo de escritura");
         exit(EXIT_FAILURE);
     }
+    if (send_buffer) free(send_buffer);
 
     return;
 }

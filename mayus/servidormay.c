@@ -66,29 +66,24 @@ void signal_handler(int signum) {
 void handle_connection(Server server, Client client) {
     char* output;
     char input[MAX_BYTES_RECV];
-    ssize_t received_bytes, sent_bytes;
+    ssize_t recv_bytes, sent_bytes;
     int i;
 
     while (1) {
-        if ( (received_bytes = recv(client.socket, input, MESSAGE_SIZE, 0)) < 0) {
+        if ( (recv_bytes = recv(client.socket, input, MAX_BYTES_RECV, 0)) < 0) {
             perror("Error al recibir la línea de texto");
             exit(EXIT_FAILURE);
-        } else if (!received_bytes) {   /* Se recibió una orden de cerrar la conexión */
+        } else if (!recv_bytes) {   /* Se recibió una orden de cerrar la conexión */
             return;
         }
 
-        printf("Recibida linea: %s\n", input);
-
-        output = (char *) calloc(received_bytes + 1, sizeof(char)); 
+        output = (char *) calloc(recv_bytes + 1, sizeof(char)); 
 
         for (i = 0; input[i]; i++) {
             output[i] = toupper((unsigned char) input[i]);
         }
 
-        /* strcat(output, ""); // Metemos el caracter de terminacion de string '\0' */
-        printf("Se enviará el mensaje: %s\n", output);
-
-        if ( (sent_bytes = send(client.socket, output, received_bytes + 1, 0)) < 0) {
+        if ( (sent_bytes = send(client.socket, output, recv_bytes + 1, 0)) < 0) {
             perror("Error al enviar la línea de texto");
             exit(EXIT_FAILURE);
         }
