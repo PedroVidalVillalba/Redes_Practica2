@@ -1,12 +1,14 @@
-#include "servidor.h"
-#include <stdio.h>
-#include <arpa/inet.h>
-#include <sys/socket.h>
 #include <stdlib.h>
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
 #include <unistd.h>
 #include <string.h>
 
-#define NUM_BYTES_RECV 120
+#include "client.h"
+
+#define MAX_BYTES_RECV 128
 
 /**
  * Process the command line inputs given to main
@@ -14,60 +16,37 @@
  * @param argv  Array of strings with the program arguments.
  * @return void
  */
-void process_args(int argc, char** argv, char* server_ip, uint16_t* port);
+void process_args(int argc, char** argv, char* server_ip, uint16_t* server_port);
 
-int main(int argc,char **argv){
+void handle_data(Client client);
+
+int main(int argc, char** argv){
 	Client client;
 	char server_ip[INET_ADDRSTRLEN];
-    uint16_t port;
+    uint16_t server_port;
 	
+    process_args(argc, argv, server_ip, &server_port);
 
-    process_args(argc, argv, server_ip, &port);
-	client = create_client(AF_INET, SOCK_STREAM, port, server_ip);
+	client = create_client(AF_INET, SOCK_STREAM, 0, server_ip, server_port);
 
 	connect_to_server(client); 
 	/*sleep(3); //Apartado 1(c)*/
 	handle_data(client);
 	
-	close(client.socket);
+	close_client(&client);
+
+    exit(EXIT_SUCCESS);
 }
 
-Client create_client(int domain, int service, uint16_t port, char* server_ip){
-	Client client;
-	
-	//Creamos el socket y comprobamos su correcta creación
-	if ((client.socket = socket(domain, service, 0)) < 0) {
-		perror("No se pudo crear el socket ");
-		exit( EXIT_FAILURE );
-	}	
-	
-	client.address.sin_family = domain,//AF_INET;
-	client.address.sin_port = htons(port);
-    if (!inet_pton(domain, server_ip, &(client.address.sin_addr))) {    /* La string no se pudo traducir a una IP válida */
-        fprintf(stderr, "La IP especificada no es válida\n\n");
-        exit(EXIT_FAILURE);
-    }; 
-	
-	return client;
-}
-
-void connect_to_server(Client client){
-	socklen_t address_length = (socklen_t)sizeof(struct sockaddr_in);
-	
-	if ((connect(client.socket, (struct sockaddr *) &client.address, address_length)) < 0) {
-		perror("No se pudo conectar");
-		exit(EXIT_FAILURE);
-	}
-}
 
 void handle_data(Client client){
 		ssize_t recv_bytes=0;
-		char server_message[NUM_BYTES_RECV];
+		char server_message[MAX_BYTES_RECV];
 		
-		while((recv_bytes = recv(client.socket, server_message, NUM_BYTES_RECV,0)) > 0){
+		while((recv_bytes = recv(client.socket, server_message, MAX_BYTES_RECV,0)) > 0){
 			printf("Mensaje recibido: %s. Han sido recibidos %ld bytes.\n", server_message, recv_bytes);
 		}
-		/*if ((recv_bytes = recv(client.socket, server_message, NUM_BYTES_RECV,0)) < 0) {
+		/*if ((recv_bytes = recv(client.socket, server_message, MAX_BYTES_RECV,0)) < 0) {
 		perror("No se recibió el mensaje");
 		exit(EXIT_FAILURE);
 		} */
@@ -78,7 +57,7 @@ void handle_data(Client client){
 
 void print_help(void) {}
 
-void process_args(int argc, char** argv, char* server_ip, uint16_t* port) {
+void process_args(int argc, char** argv, char* server_ip, uint16_t* server_port) {
     int i;
     char* current_arg;
 
@@ -104,7 +83,7 @@ void process_args(int argc, char** argv, char* server_ip, uint16_t* port) {
                     break;
                 case 'p':   /* Puerto */
                     if (++i < argc) {
-                        *port = atoi(argv[i]);
+                        *server_port = atoi(argv[i]);
                     } else {
                         fprintf(stderr, "Puerto no especificado tras la opción '-p'\n\n");
                         print_help();

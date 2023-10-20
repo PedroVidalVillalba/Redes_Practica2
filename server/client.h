@@ -19,9 +19,10 @@ typedef struct {
     char* ip;           /* IP externa del cliente (en formato texutal) */
     char* server_ip;        /* IP del servidor al que conectarse (en formato textual) */
     uint16_t server_port;   /* Puerto en el que el servidor escucha peticiones (en orden de host) */
-    struct sockaddr_in address;         /* Estructura con el dominio de comunicación e IP y puerto por los que se comunica el cliente */
+    struct sockaddr_in address;         /* Estructura con el dominio de comunicación e IP y puerto por los que se comunica el cliente (pensada para uso del servidor) */
     struct sockaddr_in server_address;  /* Estructura con el dominio de comunicación e IP y puerto del servidor al que conectarse */
 } Client;
+
 
 /**
  * @brief   Crea un cliente.
@@ -53,13 +54,6 @@ Client create_client(int domain, int type, int protocol, char* server_ip, uint16
  * @param client    Cliente a conectar.
  */
 void connect_to_server(Client client);
-
-
-/* NOTA: No sé como de buena idea es incluir esta función en una cabecera.
- * Igual es mejor simplemente borrarla y que aparezca en cada uno de los programas
- * de la forma oportuna.
- * En este ya pasé de documentar el prototipo */
-void handle_data(Client client);
 
 
 /**

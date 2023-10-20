@@ -1,12 +1,14 @@
-#include "servidor.h"
-#include <stdio.h>
-#include <arpa/inet.h>
-#include <sys/socket.h>
 #include <stdlib.h>
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
 #include <unistd.h>
 #include <string.h>
 
-#define NUM_BYTES_RECV 120
+#include "client.h"
+
+#define NUM_BYTES_RECV 128
 
 
 /**
@@ -15,99 +17,85 @@
  * @param argv  Array of strings with the program arguments.
  * @return void
  */
-void process_args(int argc, char** argv, char* server_ip, uint16_t* port);
+void process_args(int argc, char** argv, char* server_ip, uint16_t* server_port);
+
+void handle_data(Client client, char* input_file_name, char* output_file_name);
 
 int main(int argc,char **argv){
-	Client client;
-	char server_ip[INET_ADDRSTRLEN];
-    	uint16_t port;
-	
+    Client client;
+    char server_ip[INET_ADDRSTRLEN];
+    uint16_t server_port;
 
-    process_args(argc, argv, server_ip, &port);
-	client = create_client(AF_INET, SOCK_STREAM, port, server_ip);
+    process_args(argc, argv, server_ip, &server_port);
 
+    client = create_client(AF_INET, SOCK_STREAM, 0, server_ip, server_port);
 
-	connect_to_server(client); 
-	handle_data(client, "archivo1.txt", "archivo2.txt");
-	
-	close(client.socket);
+    connect_to_server(client); 
+
+    handle_data(client, "archivo1.txt", "archivo2.txt");
+
+    close_client(&client);
+
+    exit(EXIT_SUCCESS);
 }
 
-Client create_client(int domain, int service, uint16_t port, char* server_ip){
-	Client client;
-	
-	//Creamos el socket y comprobamos su correcta creación
-	if ((client.socket = socket(domain, service, 0)) < 0) {
-		perror("No se pudo crear el socket ");
-		exit( EXIT_FAILURE );
-	}	
-	
-	client.address.sin_family = domain,//AF_INET;
-	client.address.sin_port = htons(port);
-    if (!inet_pton(domain, server_ip, &(client.address.sin_addr))) {    /* La string no se pudo traducir a una IP válida */
-        fprintf(stderr, "La IP especificada no es válida\n\n");
-        exit(EXIT_FAILURE);
-    }; 
-	
-	return client;
-}
-
-void connect_to_server(Client client){
-	socklen_t address_length = (socklen_t)sizeof(struct sockaddr_in);
-	
-	if ((connect(client.socket, (struct sockaddr *) &client.address, address_length)) < 0) {
-		perror("No se pudo conectar");
-		exit(EXIT_FAILURE);
-	}
-}
 
 void handle_data(Client client, char* input_file_name, char* output_file_name){
-		ssize_t transmited_bytes=0, recv_bytes=0;
-		FILE *fp_input, *fp_output;
-		char send_buffer[NUM_BYTES_RECV];
-		char recv_buffer[NUM_BYTES_RECV];
-		
-		/*Apertura de los archivos*/
-		if((fp_input=fopen(input_file_name, "r")) < 0){
-			perror("Error en la apertura del lectura");
-			exit(EXIT_FAILURE);
-		}
-		if((fp_output=fopen(output_file_name, "w")) < 0){
-			perror("Error en la apertura del archivo de escritura");
-			exit(EXIT_FAILURE);
-		}		
-		/*Procesamiento y envio del archivo*/
-		while(!feof(fp_input)){
-		    /*Leemos hastaa ue o que devuelve fscanf es 0, y mandamos eof en ese caso*/
-		    
-		    if((fscanf(fp_input, "%[^\r\n]%*c", send_buffer)) == EOF){/*Escaneamos la linea hasta el final del archivo*/
-		        printf("Se pone a EOF\n"); 
-		        send_buffer[0] = EOF;
-		        send_buffer[1] = '\0';
-		    }
-		    strcat(send_buffer, "");/*Metemos el caracter de terminacion de string '\0'*/
-		    printf("Se procede a enviar el mensaje: %s\n", send_buffer);
-            
+    ssize_t transmited_bytes = 0, recv_bytes = 0;
+    FILE *fp_input, *fp_output;
+    char send_buffer[NUM_BYTES_RECV];
+    char recv_buffer[NUM_BYTES_RECV];
 
-		    if ((transmited_bytes = send(client.socket, send_buffer, strlen(send_buffer) + 1, 0)) < 0) {
-                perror("No se pudo enviar el mensaje");
-                exit(EXIT_FAILURE);
-            }
-            /*Esperamos a recibir la linea*/
-            if((recv_bytes = recv(client.socket, recv_buffer, NUM_BYTES_RECV,0)) < 0){
-                perror("No se pudo recibir el mensaje");
-                exit(EXIT_FAILURE);                
-            }
-            printf("Recibida linea %s\n", recv_buffer);
-            fprintf(fp_output, "%s", recv_buffer);/*@Se podria usar el mismo buffer que de envio*/
-		}
+    /*Apertura de los archivos*/
+    if ( !(fp_input = fopen(input_file_name, "r")) ) {
+        perror("Error en la apertura del archivo de lectura");
+        exit(EXIT_FAILURE);
+    }
+    if ( !(fp_output = fopen(output_file_name, "w")) ) {
+        perror("Error en la apertura del archivo de escritura");
+        exit(EXIT_FAILURE);
+    }		
 
+    /*Procesamiento y envio del archivo*/
+    while (!feof(fp_input)) {
+        /* Leemos hasta que lo que devuelve fscanf es EOF, cerramos la conexión en ese caso */
+        if( (fscanf(fp_input, "%[^\r\n]%*c", send_buffer)) == EOF){ /*Escaneamos la linea hasta el final del archivo*/
+            shutdown(client.socket, SHUT_RD);   /* Le decimos al servidor que pare de recibir */
+            continue;
+        }
 
+        /* strcat(send_buffer, ""); // Metemos el caracter de terminacion de string '\0'*/
+        printf("Se procede a enviar el mensaje: %s\n", send_buffer);
+
+        if ( (transmited_bytes = send(client.socket, send_buffer, strlen(send_buffer) + 1, 0)) < 0) {
+            perror("No se pudo enviar el mensaje");
+            exit(EXIT_FAILURE);
+        }
+        /*Esperamos a recibir la linea*/
+        if( (recv_bytes = recv(client.socket, recv_buffer, NUM_BYTES_RECV,0)) < 0){
+            perror("No se pudo recibir el mensaje");
+            exit(EXIT_FAILURE);                
+        }
+        printf("Recibida linea %s\n", recv_buffer);
+        fprintf(fp_output, "%s", recv_buffer);/*@Se podria usar el mismo buffer que de envio*/
+    }
+    
+    /* Cerramos los archivos al salir */
+    if (fclose(fp_input)) {
+        perror("No se pudo cerrar el archivo de lectura");
+        exit(EXIT_FAILURE);
+    }
+    if (fclose(fp_output)) {
+        perror("No se pudo cerrar el archivo de escritura");
+        exit(EXIT_FAILURE);
+    }
+
+    return;
 }
 
 void print_help(void) {}
 
-void process_args(int argc, char** argv, char* server_ip, uint16_t* port) {
+void process_args(int argc, char** argv, char* server_ip, uint16_t* server_port) {
     int i;
     char* current_arg;
 
@@ -133,7 +121,7 @@ void process_args(int argc, char** argv, char* server_ip, uint16_t* port) {
                     break;
                 case 'p':   /* Puerto */
                     if (++i < argc) {
-                        *port = atoi(argv[i]);
+                        *server_port = atoi(argv[i]);
                     } else {
                         fprintf(stderr, "Puerto no especificado tras la opción '-p'\n\n");
                         print_help();
