@@ -19,7 +19,7 @@
  */
 void process_args(int argc, char** argv, char* server_ip, uint16_t* server_port);
 
-void handle_data(Client client, char* input_file_name, char* output_file_name);
+void handle_data(Client client, char* input_file_name);
 
 int main(int argc,char **argv){
     Client client;
@@ -32,7 +32,7 @@ int main(int argc,char **argv){
 
     connect_to_server(client); 
 
-    handle_data(client, "archivo1.txt", "archivo2.txt");
+    handle_data(client, "archivo1.txt");
 
     close_client(&client);
 
@@ -40,7 +40,7 @@ int main(int argc,char **argv){
 }
 
 
-void handle_data(Client client, char* input_file_name, char* output_file_name){
+void handle_data(Client client, char* input_file_name){
     ssize_t transmited_bytes = 0, recv_bytes = 0;
     FILE *fp_input, *fp_output;
     char send_buffer[NUM_BYTES_RECV];
@@ -51,10 +51,27 @@ void handle_data(Client client, char* input_file_name, char* output_file_name){
         perror("Error en la apertura del archivo de lectura");
         exit(EXIT_FAILURE);
     }
-    if ( !(fp_output = fopen(output_file_name, "w")) ) {
+	
+    /*Enviamos el nombre del archivo*/
+    printf("Se procede a enviar el mensaje: %s\n", input_file_name);
+
+    if ( (transmited_bytes = send(client.socket, input_file_name, strlen(input_file_name) + 1, 0)) < 0) {
+        perror("No se pudo enviar el mensaje");
+        exit(EXIT_FAILURE);
+    }
+    /*Esperamos a recibir la linea*/
+    if( (recv_bytes = recv(client.socket, recv_buffer, NUM_BYTES_RECV,0)) < 0){
+        perror("No se pudo recibir el mensaje");
+        exit(EXIT_FAILURE);                
+    }
+    /*Recibido el nombre del archivo en mayúsculas*/
+  
+    printf("Recibida linea %s\n", recv_buffer);
+    /*Abrimos en modo escritura el archivo*/    
+    if ( !(fp_output = fopen(recv_buffer, "w")) ) {
         perror("Error en la apertura del archivo de escritura");
         exit(EXIT_FAILURE);
-    }		
+    }	
 
     /*Procesamiento y envio del archivo*/
     while (!feof(fp_input)) {
@@ -64,7 +81,7 @@ void handle_data(Client client, char* input_file_name, char* output_file_name){
             continue;
         }
 
-        /* strcat(send_buffer, ""); // Metemos el caracter de terminacion de string '\0'*/
+        
         printf("Se procede a enviar el mensaje: %s\n", send_buffer);
 
         if ( (transmited_bytes = send(client.socket, send_buffer, strlen(send_buffer) + 1, 0)) < 0) {
@@ -77,7 +94,7 @@ void handle_data(Client client, char* input_file_name, char* output_file_name){
             exit(EXIT_FAILURE);                
         }
         printf("Recibida linea %s\n", recv_buffer);
-        fprintf(fp_output, "%s", recv_buffer);/*@Se podria usar el mismo buffer que de envio*/
+        fprintf(fp_output, "%s\n", recv_buffer);/*@Se podria usar el mismo buffer que de envio*/
     }
     
     /* Cerramos los archivos al salir */
