@@ -48,7 +48,7 @@ int main(int argc, char** argv) {
     Client client;
     uint16_t port;
     int backlog;
-    pid_t child;
+    
     struct arguments args = {
         .argc = argc,
         .argv = argv,
@@ -69,13 +69,9 @@ int main(int argc, char** argv) {
     while (loop) {
         listen_for_connection(server, &client);
 
-        child = fork();
-
         handle_connection(server, client);
 
-        close_client(&client);  /* Ya hemos gestionado al cliente, podemos olvidarnos de él */
-
-        if (child == 0) loop = 0;   /* Que el hijo salga del bucle y termine */
+        close_client(&client);  /* Ya hemos gestionado al cliente, podemos olvidarnos de él */     
     }
 
     close_server(&server);
@@ -92,13 +88,32 @@ void handle_connection(Server server, Client client) {
     char message[MESSAGE_SIZE] = {0};
     ssize_t transmited_bytes;
 
-    snprintf(message, MESSAGE_SIZE, "Tu conexión al servidor %s en %s:%u ha sido aceptada\n", server.hostname, server.ip, server.port);
+   
 
-    /* Enviar el mensaje al cliente */
-    if ( (transmited_bytes = send(client.socket, message, strlen(message) + 1, 0)) < 0) {
+    /* Código asociado al apartado 1(c)*/
+    
+    /* Enviamos un primer mensaje*/
+    strcpy(message, "hola");
+    if ((transmited_bytes = send(client.socket, message, strlen(message) + 1, 0)) < 0) {
         perror("No se pudo enviar el mensaje");
         exit(EXIT_FAILURE);
     }
+    sleep(1);
+    /*Envamos un segundo mensaje*/
+    strcpy(message, "Mundo");
+    if ((transmited_bytes = send(client.socket, message, strlen(message) + 1, 0)) < 0) {
+      perror("No se pudo enviar el mensaje");
+      exit(EXIT_FAILURE);
+    }
+    
+    /* Fin del código asociado al apartado 1(c)*/
+    
+    /* Enviar el mensaje al cliente */
+    /* snprintf(message, MESSAGE_SIZE, "Tu conexión al servidor %s en %s:%u ha sido aceptada\n", server.hostname, server.ip, server.port); */
+ /*   if ( (transmited_bytes = send(client.socket, message, strlen(message) + 1, 0)) < 0) {
+        perror("No se pudo enviar el mensaje");
+        exit(EXIT_FAILURE);
+    }*/
 }
 
 
