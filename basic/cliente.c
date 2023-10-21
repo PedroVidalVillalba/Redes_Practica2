@@ -8,7 +8,7 @@
 
 #include "client.h"
 
-#define MAX_BYTES_RECV 128
+#define MAX_BYTES_RECV 15
 
 /**
  * Process the command line inputs given to main
@@ -30,7 +30,7 @@ int main(int argc, char** argv){
 	client = create_client(AF_INET, SOCK_STREAM, 0, server_ip, server_port);
 
 	connect_to_server(client); 
-	//sleep(3); /* Código asociado al apartado 1(c) */
+	
 	handle_data(client);
 	
 	close_client(&client);
@@ -44,13 +44,13 @@ void handle_data(Client client){
 		char server_message[MAX_BYTES_RECV];
 		
 		/* Código asociado al apartado 1(d) */
-		/*while((recv_bytes = recv(client.socket, server_message, MAX_BYTES_RECV,0)) > 0){
+		while((recv_bytes = recv(client.socket, server_message, MAX_BYTES_RECV,0)) > 0){
 			printf("Mensaje recibido: %s. Han sido recibidos %ld bytes.\n", server_message, recv_bytes);
-		}*/
+		}
 		
 		/* Código asociado al apartado 1(d) */
 		
-		/* Código asociado al apartado 1(c) */
+		/* Código asociado al apartado 1(c) 
 		if ((recv_bytes = recv(client.socket, server_message, MAX_BYTES_RECV,0)) < 0) {
 		perror("No se recibió el mensaje");
 		exit(EXIT_FAILURE);
@@ -58,7 +58,7 @@ void handle_data(Client client){
 		
 		printf("Mensaje recibido: %s. Han sido recibidos %ld bytes.\n", server_message, recv_bytes);
 		
-		/* Fin del código asociado al apartado 1(c) */
+		 Fin del código asociado al apartado 1(c) */
 
 }
 

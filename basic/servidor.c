@@ -94,11 +94,11 @@ void handle_connection(Server server, Client client) {
     
     /* Enviamos un primer mensaje*/
     strcpy(message, "hola");
-    if ((transmited_bytes = send(client.socket, message, strlen(message) + 1, 0)) < 0) {
+    if ((transmited_bytes = send(client.socket, message, strlen(message), 0)) < 0) {
         perror("No se pudo enviar el mensaje");
         exit(EXIT_FAILURE);
     }
-    sleep(1);
+    
     /*Envamos un segundo mensaje*/
     strcpy(message, "Mundo");
     if ((transmited_bytes = send(client.socket, message, strlen(message) + 1, 0)) < 0) {
