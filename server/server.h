@@ -23,6 +23,16 @@ typedef struct {
                                            y puerto al que está asociado el socket */
 } Server;
 
+
+/** 
+ * Variables globales para el manejo de señales.
+ */
+extern uint8_t socket_io_pending;   /* Contiene el número de eventos de entrada/salida pendientes de manejar en el socket del servidor. 
+                                     * Su uso permite que el servidor no se quede bloqueado en el proceso de espera de señales, pero que aún así pueda pausarse
+                                     * para no gastar recursos de forma innecesaria */
+extern uint8_t terminate;           /* Vale 1 si llegó una señal de terminación (SIGINT o SIGTERM). En este caso se espera que el proceso termine limpiamente. */
+
+
 /**
  * @brief   Crea un servidor.
  *
@@ -49,8 +59,10 @@ Server create_server(int domain, int type, int protocol, uint16_t port, int back
  * @brief   Escucha conexiones de clientes.
  *
  * Pone al servidor a escuchar intentos de conexión.
- * El proceso se bloquea hasta que aparece una solicitud de conexión.
- * Cuando se recibe una, se acepta, se informa de ella y se crea una nueva
+ * El socket de conexión está marcado como no bloqueante.
+ * Si no hay ninguna conexión pendiente, la función retorna y en client queda guardado un cliente
+ * con todos sus campos a 0, excepto el socket, que tiene a -1.
+ * En caso de que sí haya una conexión pendiente, se acepta, se informa de ella y se crea una nueva
  * estructura en la que guardar la información del cliente conectado, y un nuevo socket
  * conectado al cliente para atender sus peticiones.
  * Esta función no es responsable de liberar el cliente referenciado si este ya estuviese

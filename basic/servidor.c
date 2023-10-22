@@ -5,15 +5,12 @@
 #include <netinet/in.h>
 #include <unistd.h>
 #include <string.h>
-#include <signal.h>
 
 #include "server.h"
 
 #define MESSAGE_SIZE 128
 #define DEFAULT_PORT 8000
 #define DEFAULT_BACKLOG 16
-
-static int loop;    /* Para saber si seguimos iterando o hay que parar */
 
 /**
  * Estructura de datos para pasar a la función process_args.
@@ -48,8 +45,6 @@ static void print_help(char* exe_name);
 
 void handle_connection(Server server, Client client);
 
-void signal_handler(int);   /* Función para gestionar las señales */
-
 int main(int argc, char** argv) {
     Server server;
     Client client;
@@ -67,14 +62,10 @@ int main(int argc, char** argv) {
     printf("Ejecutando servidor con parámetros: PORT=%u, BACKLOG=%d.\n\n", port, backlog);
     server = create_server(AF_INET, SOCK_STREAM, 0, port, backlog);
 
-    if (signal(SIGTERM, signal_handler) == SIG_ERR) {
-        perror("No se pudo cambiar la respuesta a la señal SIGTERM");
-        exit(EXIT_FAILURE);
-    }
-
-    loop = 1;
-    while (loop) {
+    while (!terminate) {
+        if (!socket_io_pending) pause();    /* Pausamos la ejecución hasta que se reciba una señal de I/O o de terminación */
         listen_for_connection(server, &client);
+        if (client.socket == -1) continue;  /* Falsa alarma, no había conexiones pendientes o se recibió una señal de terminación */
 
         handle_connection(server, client);
 
@@ -89,10 +80,6 @@ int main(int argc, char** argv) {
 }
 
 
-void signal_handler(int signum) {
-    loop = 0;   /* Hace que deje de iterar en el bucle */
-}
-
 void handle_connection(Server server, Client client) {
     char message[MESSAGE_SIZE] = {0};
     ssize_t transmited_bytes;
@@ -102,10 +89,7 @@ void handle_connection(Server server, Client client) {
     snprintf(message, MESSAGE_SIZE, "Tu conexión al servidor %s en %s:%u ha sido aceptada.\n", server.hostname, server.ip, server.port);
 
     /* Enviar el mensaje al cliente */
-    if ( (transmited_bytes = send(client.socket, message, strlen(message) + 1, 0)) < 0) {
-        perror("No se pudo enviar el mensaje");
-        exit(EXIT_FAILURE);
-    }
+    if ( (transmited_bytes = send(client.socket, message, strlen(message) + 1, 0)) < 0) fail("No se pudo enviar el mensaje");
 }
 
 

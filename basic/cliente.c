@@ -90,7 +90,7 @@ static void print_help(char* exe_name){
 
     /** Lista de opciones de uso **/
     printf(" Opción\t\tOpción larga\t\tSignificado\n");
-    printf(" -i/-I <IP>\t--ip/--IP <IP>\t\tIP del servidor al que conectarse.\n");
+    printf(" -i/-I <IP>\t--ip/--IP <IP>\t\tIP del servidor al que conectarse, o \"localhost\" si el servidor se ejecuta en el mismo host que el cliente.\n");
     printf(" -p <port>\t--port <port>\t\tPuerto en el que escucha el servidor al que conectarse.\n");
     printf(" -h\t\t--help\t\t\tMostrar este texto de ayuda y salir.\n");
 
@@ -117,6 +117,7 @@ static void process_args(struct arguments args) {
                 case 'I':   /* IP */
                 case 'i':
                     if (++i < args.argc) {
+                        if (!strcmp(args.argv[i], "localhost")) args.argv[i] = "127.0.0.1"; /* Permitir al cliente indicar localhost como IP */
                         strncpy(args.server_ip, args.argv[i], INET_ADDRSTRLEN);
                         set_ip = 1;
                     } else {
@@ -149,6 +150,7 @@ static void process_args(struct arguments args) {
                     exit(EXIT_FAILURE);
             }
         } else if (i == 1) {    /* Se especificó la IP como primer argumento */
+            if (!strcmp(args.argv[i], "localhost")) args.argv[i] = "127.0.0.1"; /* Permitir al cliente indicar localhost como IP */
             strncpy(args.server_ip, args.argv[i], INET_ADDRSTRLEN);
             set_ip = 1;
         } else if (i == 2) {    /* Se especificó el puerto como segundo argumento */

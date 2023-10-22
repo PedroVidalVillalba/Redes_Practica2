@@ -6,11 +6,46 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <string.h>
+#include <signal.h>
+#include <errno.h>
+#include <fcntl.h>
 
 #include "server.h"
 #include "getip.h"
 
 #define BUFFER_LEN 64
+
+#define fail(message) { perror((message)); exit(EXIT_FAILURE); }
+
+/** Variables globales que exportar en el fichero de cabecera para el manejo de señales */
+uint8_t socket_io_pending;
+uint8_t terminate;
+
+
+/**
+ * @brief   Maneja las señales que recibe el servidor
+ *
+ * Maneja las señales de SIGIO, SIGINT y SIGTERM que puede recibir el servidor durante su ejecución.
+ *  - SIGIO: tuvo lugar un evento de I/O en el socket del servidor.
+ *  - SIGINT, SIGTERM: terminar la ejecución del programa segura.
+ * Establece los valores de las variables globales socket_io_pending y terminate apropiadamente.
+ *
+ *  @param signum   Número de señal recibida.
+ */
+static void signal_handler(int signum) {
+    switch (signum) {
+        case SIGIO:
+            socket_io_pending++;    /* Aumentar en 1 el número de eventos de entrada/salida pendientes */
+            break;
+        case SIGINT:
+        case SIGTERM:
+            terminate = 1;          /* Marca que el programa debe terminar */
+            break;
+        default:
+            break;
+    }
+
+}
 
 
 /**
@@ -68,22 +103,22 @@ Server create_server(int domain, int type, int protocol, uint16_t port, int back
     }
 
     /* Crear el socket del servidor */
-    if ( (server.socket = socket(domain, type, protocol)) < 0) {
-        perror("No se pudo crear el socket");
-        exit(EXIT_FAILURE);
-    }
+    if ( (server.socket = socket(domain, type, protocol)) < 0) fail("No se pudo crear el socket");
 
     /* Asignar IPs a las que escuchar y número de puerto por el que atender peticiones (bind) */
-    if (bind(server.socket, (struct sockaddr *) &server.listen_address, sizeof(struct sockaddr_in)) < 0) {
-        perror("No se pudo asignar dirección IP");
-        exit(EXIT_FAILURE);
-    }
+    if (bind(server.socket, (struct sockaddr *) &server.listen_address, sizeof(struct sockaddr_in)) < 0) fail("No se pudo asignar dirección IP");
 
     /* Marcar el socket como pasivo, para que pueda escuchar conexiones de clientes */
-    if (listen(server.socket, backlog) < 0) {   
-        perror("No se pudo marcar el socket como pasivo");
-        exit(EXIT_FAILURE);
-    }
+    if (listen(server.socket, backlog) < 0) fail("No se pudo marcar el socket como pasivo");
+
+    /* Configurar el servidor para enviarse a sí mismo un SIGIO cuando se produzca actividad en el socket, para evitar bloqueos esperando por conexiones */
+    if (fcntl(server.socket, F_SETFL, O_ASYNC | O_NONBLOCK) < 0) fail("No se pudo configurar el envío de SIGIO en el socket");
+    if (fcntl(server.socket, F_SETOWN, getpid()) < 0) fail("No se pudo configurar el autoenvío de señales en el socket");
+
+    if (signal(SIGIO, signal_handler) == SIG_ERR)   fail("No se pudo establecer el manejo de la señal SIGIO");
+    if (signal(SIGINT, signal_handler) == SIG_ERR)  fail("No se pudo establecer el manejo de la señal SIGINT");
+    if (signal(SIGTERM, signal_handler) == SIG_ERR) fail("No se pudo establecer el manejo de la señal SIGTERM");
+
 
     printf("Servidor creado con éxito y listo para escuchar solicitudes de conexión.\n"
             "Hostname: %s; IP: %s; Puerto: %d\n\n", server.hostname, server.ip, server.port);
@@ -96,8 +131,10 @@ Server create_server(int domain, int type, int protocol, uint16_t port, int back
  * @brief   Escucha conexiones de clientes.
  *
  * Pone al servidor a escuchar intentos de conexión.
- * El proceso se bloquea hasta que aparece una solicitud de conexión.
- * Cuando se recibe una, se acepta, se informa de ella y se crea una nueva
+ * El socket de conexión está marcado como no bloqueante.
+ * Si no hay ninguna conexión pendiente, la función retorna y en client queda guardado un cliente
+ * con todos sus campos a 0, excepto el socket, que tiene a -1.
+ * En caso de que sí haya una conexión pendiente, se acepta, se informa de ella y se crea una nueva
  * estructura en la que guardar la información del cliente conectado, y un nuevo socket
  * conectado al cliente para atender sus peticiones.
  * Esta función no es responsable de liberar el cliente referenciado si este ya estuviese
@@ -116,9 +153,13 @@ void listen_for_connection(Server server, Client* client) {
 
     /* Aceptar la conexión del cliente en el socket pasivo del servidor */
     if ( (client->socket = accept(server.socket, (struct sockaddr *) &(client->address), &address_length)) < 0) {
-        perror("No se pudo aceptar la conexión");
-        exit(EXIT_FAILURE);
+        if (errno == EAGAIN || errno == EWOULDBLOCK) {  /* Hemos marcado al socket con O_NONBLOCK; no hay conexiones pendientes, así que lo registramos y salimos */
+            socket_io_pending = 0;
+            return;
+        }
+        fail("No se pudo aceptar la conexión");
     }
+
 
     /* Rellenar los campos del cliente con la información relevante para el servidor.
      * Todos los campos que se desconozcan se dejarán con el valor por defecto que deja 
@@ -137,6 +178,8 @@ void listen_for_connection(Server server, Client* client) {
     /* Informar de la conexión */
     printf("Cliente conectado desde %s:%u\n", client->ip, ntohs(client->address.sin_port));
 
+    socket_io_pending--;    /* Una conexión ya manejada */
+
     return;
 }
 
@@ -152,10 +195,7 @@ void listen_for_connection(Server server, Client* client) {
 void close_server(Server* server) {
     /* Cerrar el socket del servidor */
     if (server->socket >= 0) {
-        if (close(server->socket)) {
-            perror("No se pudo cerrar el socket del servidor");
-            exit(EXIT_FAILURE);
-        }
+        if (close(server->socket)) fail("No se pudo cerrar el socket del servidor");
     }
 
     if (server->hostname) free(server->hostname);
