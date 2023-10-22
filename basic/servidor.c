@@ -12,6 +12,8 @@
 #define DEFAULT_PORT 8000
 #define DEFAULT_BACKLOG 16
 
+#define fail(message) { perror((message)); exit(EXIT_FAILURE); }
+
 /**
  * Estructura de datos para pasar a la función process_args.
  * Debe contener siempre los campos int argc, char** argv, provenientes de main,
@@ -82,14 +84,14 @@ int main(int argc, char** argv) {
 
 void handle_connection(Server server, Client client) {
     char message[MESSAGE_SIZE] = {0};
-    ssize_t transmited_bytes;
+    ssize_t sent_bytes;
 
     printf("\nManejando la conexión del cliente %s:%u...\n", client.ip, ntohs(client.address.sin_port));
 
     snprintf(message, MESSAGE_SIZE, "Tu conexión al servidor %s en %s:%u ha sido aceptada.\n", server.hostname, server.ip, server.port);
 
     /* Enviar el mensaje al cliente */
-    if ( (transmited_bytes = send(client.socket, message, strlen(message) + 1, 0)) < 0) fail("No se pudo enviar el mensaje");
+    if ( (sent_bytes = send(client.socket, message, strlen(message) + 1, 0)) < 0) fail("No se pudo enviar el mensaje");
 }
 
 
@@ -156,7 +158,7 @@ static void process_args(struct arguments args) {
                         exit(EXIT_FAILURE);
                     }
                     break;
-                case 'h':
+                case 'h':   /* Ayuda */
                     print_help(args.argv[0]);
                     exit(EXIT_SUCCESS);
                 default:

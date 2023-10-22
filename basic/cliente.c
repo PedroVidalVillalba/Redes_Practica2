@@ -102,7 +102,7 @@ static void print_help(char* exe_name){
 static void process_args(struct arguments args) {
     int i;
     char* current_arg;
-    int set_ip = 0, set_port = 0;   /* Flags para saber si se setearon la IP y puerto */
+    uint8_t set_ip = 0, set_port = 0;   /* Flags para saber si se setearon la IP y puerto */
 
     for (i = 1; i < args.argc; i++) { /* Procesamos los argumentos (sin contar el nombre del ejecutable) */
         current_arg = args.argv[i];
@@ -121,7 +121,7 @@ static void process_args(struct arguments args) {
                         strncpy(args.server_ip, args.argv[i], INET_ADDRSTRLEN);
                         set_ip = 1;
                     } else {
-                        fprintf(stderr, "IP no especificada tras la opción '-I'\n\n");
+                        fprintf(stderr, "IP no especificada tras la opción '-i'\n\n");
                         print_help(args.argv[0]);
                         exit(EXIT_FAILURE);
                     }
@@ -141,7 +141,7 @@ static void process_args(struct arguments args) {
                         exit(EXIT_FAILURE);
                     }
                     break;
-                case 'h':
+                case 'h':   /* Ayuda */
                     print_help(args.argv[0]);
                     exit(EXIT_SUCCESS);
                 default:
