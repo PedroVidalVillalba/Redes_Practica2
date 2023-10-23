@@ -90,7 +90,7 @@ int main(int argc, char** argv) {
 
         handle_connection(server, client);
 
-        printf("\nCerrando la conexión del cliente %s:%u.\n\n", client.ip, ntohs(client.address.sin_port));
+        printf("\nCerrando la conexión del cliente %s:%u.\n\n", client.ip, client.port);
         close_client(&client);  /* Ya hemos gestionado al cliente, podemos olvidarnos de él */
     }
 
@@ -106,7 +106,7 @@ void handle_connection(Server server, Client client) {
     char input[MAX_BYTES_RECV];
     ssize_t recv_bytes, sent_bytes;
 
-    printf("\nManejando la conexión del cliente %s:%u...\n", client.ip, ntohs(client.address.sin_port));
+    printf("\nManejando la conexión del cliente %s:%u...\n", client.ip, client.port);
 
     while (1) {
         if ( (recv_bytes = recv(client.socket, input, MAX_BYTES_RECV, 0)) < 0) fail("Error al recibir la línea de texto");

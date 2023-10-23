@@ -71,7 +71,7 @@ int main(int argc, char** argv) {
 
         handle_connection(server, client);
 
-        printf("\nCerrando la conexión del cliente %s:%u.\n\n", client.ip, ntohs(client.address.sin_port));
+        printf("\nCerrando la conexión del cliente %s:%u.\n\n", client.ip, client.port);
         close_client(&client);  /* Ya hemos gestionado al cliente, podemos olvidarnos de él */
     }
 
@@ -86,7 +86,7 @@ void handle_connection(Server server, Client client) {
     char message[MESSAGE_SIZE] = {0};
     ssize_t sent_bytes;
 
-    printf("\nManejando la conexión del cliente %s:%u...\n", client.ip, ntohs(client.address.sin_port));
+    printf("\nManejando la conexión del cliente %s:%u...\n", client.ip, client.port);
 
     snprintf(message, MESSAGE_SIZE, "Tu conexión al servidor %s en %s:%u ha sido aceptada.\n", server.hostname, server.ip, server.port);
 

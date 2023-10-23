@@ -173,10 +173,11 @@ void listen_for_connection(Server server, Client* client) {
     strcpy(client->ip, ipname);
     client->server_ip = (char *) calloc(strlen(server.ip) + 1, sizeof(char));
     strcpy(client->server_ip, server.ip);
+    client->port = ntohs(client->address.sin_port);
     client->server_port = server.port;
 
     /* Informar de la conexión */
-    printf("Cliente conectado desde %s:%u\n", client->ip, ntohs(client->address.sin_port));
+    printf("Cliente conectado desde %s:%u\n", client->ip, client->port);
 
     socket_io_pending--;    /* Una conexión ya manejada */
 
