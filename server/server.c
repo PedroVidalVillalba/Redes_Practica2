@@ -12,10 +12,9 @@
 
 #include "server.h"
 #include "getip.h"
+#include "loging.h"
 
-#define BUFFER_LEN 64
-
-#define fail(message) { perror((message)); exit(EXIT_FAILURE); }
+#define BUFFER_LEN 128
 
 /** Variables globales que exportar en el fichero de cabecera para el manejo de señales */
 uint8_t socket_io_pending;
@@ -53,6 +52,7 @@ static void signal_handler(int signum) {
  *
  * Crea un servidor nuevo con un nuevo socket, le asigna un puerto y 
  * lo marca como pasivo para poder escuchar conexiones.
+ * Si el parámetro log no es NULL, crea también un archivo de log para guardar un registro de actividad.
  *
  * @param domain    Dominio de comunicación. 
  * @param type      Tipo de protocolo usado para el socket.
@@ -61,13 +61,14 @@ static void signal_handler(int signum) {
  *                  puede especificar con un 0.
  * @param port      Número de puerto en el que escuchar (en orden de host).
  * @param backlog   Longitud máxima de la cola de conexiones pendientes.
+ * @param logfile   Nombre del archivo en el que guardar el registro de actividad.
  *
  * @return  Servidor que guarda toda la información relevante sobre sí mismo con la que
  *          fue creado, y con un socket pasivo abierto en el cual está listo para escuchar 
  *          y aceptar conexiones entrantes desde cualquier IP y del dominio y por puerto 
  *          especificados.
  */
-Server create_server(int domain, int type, int protocol, uint16_t port, int backlog) {
+Server create_server(int domain, int type, int protocol, uint16_t port, int backlog, char* logfile) {
     Server server;
     char buffer[BUFFER_LEN] = {0};
 
@@ -84,44 +85,81 @@ Server create_server(int domain, int type, int protocol, uint16_t port, int back
         .listen_address.sin_addr.s_addr = htonl(INADDR_ANY) /* Aceptar conexiones desde cualquier IP */
     };
 
+    /* Abrimos el log para escritura.
+     * Si no se puede abrir, avisamos y seguimos, ya que no es un error crítico. */
+    if (logfile) {
+        if ( (server.log = fopen(logfile, "w")) == NULL)
+            perror("No se pudo crear el log del servidor");
+    }        
+    log_printf("Inicializando servidor...\n");
+
     /* Guardar el nombre del equipo en el que se ejecuta el servidor.
      * No produce error crítico, por lo que no hay que salir */
     if (gethostname(buffer, BUFFER_LEN)) {
         perror("No se pudo obtener el nombre de host del servidor");
+        log_printf(ANSI_COLOR_RED "Error al obtener el nombre de host.\n" ANSI_COLOR_RESET);
     } else {
         server.hostname = (char *) calloc(strlen(buffer) + 1, sizeof(char));
         strcpy(server.hostname, buffer);
+        log_printf("Nombre de host del servidor configurado con éxito: %s.\n", server.hostname);
     }
 
     /* Guardar la IP externa del servidor.
      * Tampoco supone un error crítico. */
     if (!getip(buffer, BUFFER_LEN)) {
         perror("No se pudo obtener la IP externa del servidor");
+        log_printf(ANSI_COLOR_RED "Error al obtener la IP externa del servidor.\n" ANSI_COLOR_RESET);
     } else {
         server.ip = (char *) calloc(strlen(buffer) + 1, sizeof(char));
         strcpy(server.ip, buffer);
+        log_printf("IP externa del servidor configurada con éxito: %s.\n", server.ip);
     }
 
     /* Crear el socket del servidor */
-    if ( (server.socket = socket(domain, type, protocol)) < 0) fail("No se pudo crear el socket");
+    if ( (server.socket = socket(domain, type, protocol)) < 0) {
+        log_printf(ANSI_COLOR_RED "Error al crear el socket del servidor.\n" ANSI_COLOR_RESET);
+        fail("No se pudo crear el socket");
+    }
 
     /* Asignar IPs a las que escuchar y número de puerto por el que atender peticiones (bind) */
-    if (bind(server.socket, (struct sockaddr *) &server.listen_address, sizeof(struct sockaddr_in)) < 0) fail("No se pudo asignar dirección IP");
+    if (bind(server.socket, (struct sockaddr *) &server.listen_address, sizeof(struct sockaddr_in)) < 0) {
+        log_printf(ANSI_COLOR_RED "Error al asignar la dirección (bind) del socket del servidor.\n" ANSI_COLOR_RESET);
+        fail("No se pudo asignar dirección IP");
+    }
 
     /* Marcar el socket como pasivo, para que pueda escuchar conexiones de clientes */
-    if (listen(server.socket, backlog) < 0) fail("No se pudo marcar el socket como pasivo");
+    if (listen(server.socket, backlog) < 0) {
+        log_printf(ANSI_COLOR_RED "Error al marcar el socket del servidor como pasivo (listen).\n" ANSI_COLOR_RESET);
+        fail("No se pudo marcar el socket como pasivo");
+    }
 
     /* Configurar el servidor para enviarse a sí mismo un SIGIO cuando se produzca actividad en el socket, para evitar bloqueos esperando por conexiones */
-    if (fcntl(server.socket, F_SETFL, O_ASYNC | O_NONBLOCK) < 0) fail("No se pudo configurar el envío de SIGIO en el socket");
-    if (fcntl(server.socket, F_SETOWN, getpid()) < 0) fail("No se pudo configurar el autoenvío de señales en el socket");
+    if (fcntl(server.socket, F_SETFL, O_ASYNC | O_NONBLOCK) < 0) {
+        log_printf(ANSI_COLOR_RED "Error al configurar el envío de SIGIO en el socket.\n" ANSI_COLOR_RESET);
+        fail("No se pudo configurar el envío de SIGIO en el socket");
+    }
+    if (fcntl(server.socket, F_SETOWN, getpid()) < 0) {
+        log_printf(ANSI_COLOR_RED "Error al configurar el autoenvío de señales en el socket.\n" ANSI_COLOR_RESET);
+        fail("No se pudo configurar el autoenvío de señales en el socket");
+    }
 
-    if (signal(SIGIO, signal_handler) == SIG_ERR)   fail("No se pudo establecer el manejo de la señal SIGIO");
-    if (signal(SIGINT, signal_handler) == SIG_ERR)  fail("No se pudo establecer el manejo de la señal SIGINT");
-    if (signal(SIGTERM, signal_handler) == SIG_ERR) fail("No se pudo establecer el manejo de la señal SIGTERM");
+    if (signal(SIGIO, signal_handler) == SIG_ERR) {
+        log_printf(ANSI_COLOR_RED "Error al establecer el manejo de la señal SIGIO.\n" ANSI_COLOR_RESET);
+        fail("No se pudo establecer el manejo de la señal SIGIO");
+    }
+    if (signal(SIGINT, signal_handler) == SIG_ERR) {
+        log_printf(ANSI_COLOR_RED "Error al establecer el manejo de la señal SIGINT.\n" ANSI_COLOR_RESET);
+        fail("No se pudo establecer el manejo de la señal SIGINT");
+    }
+    if (signal(SIGTERM, signal_handler) == SIG_ERR) {
+        log_printf(ANSI_COLOR_RED "Error al establecer el manejo de la señal SIGTERM.\n" ANSI_COLOR_RESET);
+        fail("No se pudo establecer el manejo de la señal SIGTERM");
+    }
 
 
     printf("Servidor creado con éxito y listo para escuchar solicitudes de conexión.\n"
             "Hostname: %s; IP: %s; Puerto: %d\n\n", server.hostname, server.ip, server.port);
+    log_printf("Servidor creado con éxito y listo para escuchar solicitudes de conexión.\tHostname: %s; IP: %s; Puerto: %d\n\n", server.hostname, server.ip, server.port);
 
     return server;
 }
@@ -157,6 +195,7 @@ void listen_for_connection(Server server, Client* client) {
             socket_io_pending = 0;
             return;
         }
+        log_printf(ANSI_COLOR_RED "Error al aceptar una conexión.\n" ANSI_COLOR_RESET);
         fail("No se pudo aceptar la conexión");
     }
 
@@ -178,6 +217,7 @@ void listen_for_connection(Server server, Client* client) {
 
     /* Informar de la conexión */
     printf("Cliente conectado desde %s:%u\n", client->ip, client->port);
+    log_printf("Cliente conectado desde %s:%u\n", client->ip, client->port);
 
     socket_io_pending--;    /* Una conexión ya manejada */
 
@@ -194,13 +234,18 @@ void listen_for_connection(Server server, Client* client) {
  * @param server    Servidor a cerrar.
  */
 void close_server(Server* server) {
+    log_printfp("Cerrando el servidor...\n");
     /* Cerrar el socket del servidor */
     if (server->socket >= 0) {
-        if (close(server->socket)) fail("No se pudo cerrar el socket del servidor");
+        if (close(server->socket)) {
+            log_printfp(ANSI_COLOR_RED "Error al cerrar el socket del servidor.\n");
+            fail("No se pudo cerrar el socket del servidor");
+        } 
     }
 
     if (server->hostname) free(server->hostname);
     if (server->ip) free(server->ip);
+    if (server->log) fclose(server->log);
 
     /* Limpiar la estructura poniendo todos los campos a 0 */
     memset(server, 0, sizeof(Server));

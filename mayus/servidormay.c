@@ -9,13 +9,13 @@
 #include <locale.h>
 
 #include "server.h"
+#include "loging.h"
 
 #define MESSAGE_SIZE 10000
+#define MAX_BYTES_RECV 128
 #define DEFAULT_PORT 8000
 #define DEFAULT_BACKLOG 16
-#define MAX_BYTES_RECV 128
-
-#define fail(message) { perror((message)); exit(EXIT_FAILURE); }
+#define DEFAULT_LOG "log"
 
 /**
  * Estructura de datos para pasar a la función process_args.
@@ -28,6 +28,7 @@ struct arguments {
     char** argv;
     uint16_t* port;
     int* backlog;
+    char** logfile;
 };
 
 /**
@@ -69,19 +70,21 @@ int main(int argc, char** argv) {
     Client client;
     uint16_t port;
     int backlog;
+    char* logfile;
     struct arguments args = {
         .argc = argc,
         .argv = argv,
         .port = &port,
-        .backlog = &backlog
+        .backlog = &backlog,
+        .logfile = &logfile
     };
 
     if (!setlocale(LC_ALL, "")) fail("No se pudo establecer la locale del programa");   /* Establecer la locale según las variables de entorno */
 
     process_args(args);
 
-    printf("Ejecutando servidor de mayúsculas con parámetros: PORT=%u, BACKLOG=%d.\n\n", port, backlog);
-    server = create_server(AF_INET, SOCK_STREAM, 0, port, backlog);
+    printf("Ejecutando servidor de mayúsculas con parámetros: PORT=%u, BACKLOG=%d, LOG=%s.\n\n", port, backlog, logfile);
+    server = create_server(AF_INET, SOCK_STREAM, 0, port, backlog, logfile);
 
     while (!terminate) {
         if (!socket_io_pending) pause();    /* Pausamos la ejecución hasta que se reciba una señal de I/O o de terminación */
@@ -91,6 +94,7 @@ int main(int argc, char** argv) {
         handle_connection(server, client);
 
         printf("\nCerrando la conexión del cliente %s:%u.\n\n", client.ip, client.port);
+        log_printf("Cerrando la conexión del cliente %s:%u.\n", client.ip, client.port);
         close_client(&client);  /* Ya hemos gestionado al cliente, podemos olvidarnos de él */
     }
 
@@ -107,6 +111,7 @@ void handle_connection(Server server, Client client) {
     ssize_t recv_bytes, sent_bytes;
 
     printf("\nManejando la conexión del cliente %s:%u...\n", client.ip, client.port);
+    log_printf("\nManejando la conexión del cliente %s:%u...\n", client.ip, client.port);
 
     while (1) {
         if ( (recv_bytes = recv(client.socket, input, MAX_BYTES_RECV, 0)) < 0) fail("Error al recibir la línea de texto");
@@ -115,8 +120,9 @@ void handle_connection(Server server, Client client) {
         output = toupper_string(input); 
 
         if ( (sent_bytes = send(client.socket, output, strlen(output) + 1, 0)) < 0) {
-            perror("Error al enviar la línea de texto");
-            exit(EXIT_FAILURE);
+            log_printf(ANSI_COLOR_RED "Error al enviar línea de texto al cliente.\n");
+            fail("Error al enviar la línea de texto al cliente");
+
         }
 
         if (output) free(output);
@@ -169,18 +175,20 @@ static char* toupper_string(const char* source) {
 
 static void print_help(char* exe_name){
     /** Cabecera y modo de ejecución **/
-    printf("Uso: %s [[-p] <port>] [-b <backlog>] [-h]\n\n", exe_name);
+    printf("Uso: %s [[-p] <port>] [-b <backlog>] [-l <log> | --no-log] [-h]\n\n", exe_name);
 
     /** Lista de opciones de uso **/
     printf(" Opción\t\tOpción larga\t\tSignificado\n");
     printf(" -p <port>\t--port <port>\t\tPuerto en el que escuchará el servidor.\n");
     printf(" -b <backlog>\t--backlog <backlog>\tTamaño máximo de la cola de conexiones pendientes.\n");
+    printf(" -l <log>\t--log <log>\t\tNombre del archivo en el que guardar el registro de actividad del servidor.\n");
+    printf(" -n\t\t--no-log\t\tNo crear archivo de registro de actividad.\n");
     printf(" -h\t\t--help\t\t\tMostrar este texto de ayuda y salir.\n");
 
     /** Consideraciones adicionales **/
     printf("\nPuede especificarse el parámetro <port> para el puerto en el que escucha el servidor sin escribir la opción '-p', siempre y cuando este sea el primer parámetro que se pasa a la función.\n");
-    printf("\nSi no se especifica alguno de los argumentos, el servidor se ejecutará con su valor por defecto, a saber: DEFAULT_PORT=%u; DEFAULT_BACKLOG=%d\n", DEFAULT_PORT, DEFAULT_BACKLOG);
-    printf("\nSi se especifica varias veces un argumento, el comportamiento está indefinido.\n");
+    printf("\nSi no se especifica alguno de los argumentos, el servidor se ejecutará con su valor por defecto, a saber: DEFAULT_PORT=%u; DEFAULT_BACKLOG=%d, DEFAULT_LOG=%s\n", DEFAULT_PORT, DEFAULT_BACKLOG, DEFAULT_LOG);
+    printf("\nSi se especifica varias veces un argumento, o se especifican las opciones \"--log\" y \"--no-log\" a la vez, el comportamiento está indefinido.\n");
 }
 
 
@@ -191,6 +199,7 @@ static void process_args(struct arguments args) {
     /* Inicializar los valores de puerto y backlog a sus valores por defecto */
     *args.port = DEFAULT_PORT;
     *args.backlog = DEFAULT_BACKLOG;
+    *args.logfile = DEFAULT_LOG;
 
     for (i = 1; i < args.argc; i++) { /* Procesamos los argumentos (sin contar el nombre del ejecutable) */
         current_arg = args.argv[i];
@@ -199,6 +208,8 @@ static void process_args(struct arguments args) {
             if (current_arg[1] == '-') { /* Opción larga */
                 if (!strcmp(current_arg, "--port")) current_arg = "-p";
                 else if (!strcmp(current_arg, "--backlog")) current_arg = "-b";
+                else if (!strcmp(current_arg, "--log")) current_arg = "-l";
+                else if (!strcmp(current_arg, "--no-log")) current_arg = "-n";
                 else if (!strcmp(current_arg, "--help")) current_arg = "-h";
             } 
             switch(current_arg[1]) {
@@ -229,6 +240,18 @@ static void process_args(struct arguments args) {
                         print_help(args.argv[0]);
                         exit(EXIT_FAILURE);
                     }
+                    break;
+                case 'l':   /* Log */
+                    if (++i < args.argc) {
+                        *args.logfile = args.argv[i];
+                    } else {
+                        fprintf(stderr, "Nombre del log no especificado tras la opción '-l'.\n\n");
+                        print_help(args.argv[0]);
+                        exit(EXIT_FAILURE);
+                    }
+                    break;
+                case 'n':   /* No-log */
+                    *args.logfile = NULL;
                     break;
                 case 'h':   /* Ayuda */
                     print_help(args.argv[0]);

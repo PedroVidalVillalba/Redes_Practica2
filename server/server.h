@@ -21,6 +21,7 @@ typedef struct {
     char* ip;       /* IP externa del servidor (en formato textual) */
     struct sockaddr_in listen_address;  /* Estructura con el dominio de comunicación, IPs a las que atender
                                            y puerto al que está asociado el socket */
+    FILE* log;      /* Archivo en el que guardar el registro de actividad del servidor */
 } Server;
 
 
@@ -38,6 +39,7 @@ extern uint8_t terminate;           /* Vale 1 si llegó una señal de terminaci�
  *
  * Crea un servidor nuevo con un nuevo socket, le asigna un puerto y 
  * lo marca como pasivo para poder escuchar conexiones.
+ * Si el parámetro log no es NULL, crea también un archivo de log para guardar un registro de actividad.
  *
  * @param domain    Dominio de comunicación. 
  * @param type      Tipo de protocolo usado para el socket.
@@ -46,13 +48,14 @@ extern uint8_t terminate;           /* Vale 1 si llegó una señal de terminaci�
  *                  puede especificar con un 0.
  * @param port      Número de puerto en el que escuchar (en orden de host).
  * @param backlog   Longitud máxima de la cola de conexiones pendientes.
+ * @param logfile   Nombre del archivo en el que guardar el registro de actividad.
  *
  * @return  Servidor que guarda toda la información relevante sobre sí mismo con la que
  *          fue creado, y con un socket pasivo abierto en el cual está listo para escuchar 
  *          y aceptar conexiones entrantes desde cualquier IP y del dominio y por puerto 
  *          especificados.
  */
-Server create_server(int domain, int type, int protocol, uint16_t port, int backlog);
+Server create_server(int domain, int type, int protocol, uint16_t port, int backlog, char* logfile);
 
 
 /**
