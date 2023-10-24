@@ -111,7 +111,7 @@ void handle_connection(Server server, Client client) {
     ssize_t recv_bytes, sent_bytes;
 
     printf("\nManejando la conexión del cliente %s:%u...\n", client.ip, client.port);
-    log_printf("\nManejando la conexión del cliente %s:%u...\n", client.ip, client.port);
+    log_printf("Manejando la conexión del cliente %s:%u...\n", client.ip, client.port);
 
     while (1) {
         if ( (recv_bytes = recv(client.socket, input, MAX_BYTES_RECV, 0)) < 0) fail("Error al recibir la línea de texto");
