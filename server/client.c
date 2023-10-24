@@ -9,10 +9,10 @@
 
 #include "client.h"
 #include "getip.h"
+#include "loging.h"
 
 #define BUFFER_LEN 64
 
-#define fail(message) { perror((message)); exit(EXIT_FAILURE); }
 
 /**
  * @brief   Crea un cliente.
