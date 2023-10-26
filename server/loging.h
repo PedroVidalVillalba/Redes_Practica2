@@ -1,5 +1,7 @@
-#ifndef LOGGING_H
-#define LOGGING_H
+#ifndef LOGING_H
+#define LOGING_H
+
+#include <stdio.h>
 
 /* Colores estándar de ANSI para impresión */
 #define ANSI_COLOR_RED     "\x1b[31m"
@@ -9,9 +11,13 @@
 #define ANSI_COLOR_MAGENTA "\x1b[35m"
 #define ANSI_COLOR_CYAN    "\x1b[36m"
 #define ANSI_COLOR_RESET   "\x1b[0m"
+/* Macro para establecer los colores de los dispositivos de salida:
+ * stderr en rojo, y stdout con colores por defecto. */
+#define set_colors() { fprintf(stderr, ANSI_COLOR_RED); fprintf(stdout, ANSI_COLOR_RESET); }
+
 
 /* Macro para imprimir mensaje de error y salir */
-#define fail(message) { perror((message)); exit(EXIT_FAILURE); }
+#define fail(message) { perror(ANSI_COLOR_RED message); exit(EXIT_FAILURE); }
 /* Macro para imprimir en el log, si existe (debe llamarse server.log) */
 #define log_printf(format, ...) { if (server.log) fprintf(server.log, "%s " format , identify(), ##__VA_ARGS__); }
 /* Macro para imprimir en el log, si existe (debe llamarse server->log) */
@@ -29,4 +35,4 @@
  */
 char* identify(void);
 
-#endif /* LOGGING_H */
+#endif /* LOGING_H */

@@ -39,7 +39,7 @@ extern uint8_t terminate;           /* Vale 1 si llegó una señal de terminaci�
  *
  * Crea un servidor nuevo con un nuevo socket, le asigna un puerto y 
  * lo marca como pasivo para poder escuchar conexiones.
- * Si el parámetro log no es NULL, crea también un archivo de log para guardar un registro de actividad.
+ * Si el argumento logfile no es NULL, crea también un archivo de log para guardar un registro de actividad.
  *
  * @param domain    Dominio de comunicación. 
  * @param type      Tipo de protocolo usado para el socket.

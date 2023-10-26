@@ -40,13 +40,24 @@ struct arguments {
 static void process_args(struct arguments args);
 
 /**
- * @brief Imprime la ayuda del programa
+ * @brief   Imprime la ayuda del programa
  *
  * @param exe_name  Nombre del ejecutable (argv[0])
  */
 static void print_help(char* exe_name);
 
+/**
+ * @brief   Maneja la conexión desde el lado del servidor.
+ *
+ * Envía un mensaje al cliente diciéndole que se aceptó su conexión
+ * y con la información del servidor.
+ *
+ * @param server    Servidor que maneja la conexión.
+ * @param client    Cliente conectado que solicita el servicio.
+ */
 void handle_connection(Server server, Client client);
+
+
 
 int main(int argc, char** argv) {
     Server server;
@@ -61,6 +72,8 @@ int main(int argc, char** argv) {
         .backlog = &backlog,
         .logfile = &logfile
     };
+
+    set_colors();
 
     process_args(args);
 
@@ -91,7 +104,7 @@ void handle_connection(Server server, Client client) {
     ssize_t sent_bytes;
 
     printf("\nManejando la conexión del cliente %s:%u...\n", client.ip, client.port);
-    log_printf("\nManejando la conexión del cliente %s:%u...\n", client.ip, client.port);
+    log_printf("Manejando la conexión del cliente %s:%u...\n", client.ip, client.port);
 
     snprintf(message, MESSAGE_SIZE, "Tu conexión al servidor %s en %s:%u ha sido aceptada.\n", server.hostname, server.ip, server.port);
 

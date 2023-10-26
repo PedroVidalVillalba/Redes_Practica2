@@ -63,7 +63,17 @@ static void print_help(char* exe_name);
  */
 static char* toupper_string(const char* source);
 
+/**
+ * @brief   Maneja la conexión desde el lado del servidor.
+ *
+ * Recibe strings del cliente, las pasa a mayúsculas y se las reenvía.
+ *
+ * @param server    Servidor que maneja la conexión.
+ * @param client    Cliente conectado que solicita el servicio.
+ */
 void handle_connection(Server server, Client client);
+
+
 
 int main(int argc, char** argv) {
     Server server;
@@ -78,6 +88,8 @@ int main(int argc, char** argv) {
         .backlog = &backlog,
         .logfile = &logfile
     };
+
+    set_colors();
 
     if (!setlocale(LC_ALL, "")) fail("No se pudo establecer la locale del programa");   /* Establecer la locale según las variables de entorno */
 

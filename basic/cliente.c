@@ -7,6 +7,7 @@
 #include <string.h>
 
 #include "client.h"
+#include "loging.h"
 
 #define MAX_BYTES_RECV 128
 
@@ -24,7 +25,7 @@ struct arguments {
 };
 
 /**
- * @brief   Procesa los argumentos del main
+ * @brief   Procesa los argumentos del main.
  *
  * Procesa los argumentos proporcionados al programa por línea de comandos,
  * e inicializa las variables del programa necesarias acorde a estos.
@@ -35,13 +36,23 @@ struct arguments {
 static void process_args(struct arguments args);
 
 /**
- * @brief Imprime la ayuda del programa
+ * @brief Imprime la ayuda del programa.
  *
- * @param exe_name  Nombre del ejecutable (argv[0])
+ * @param exe_name  Nombre del ejecutable (argv[0]).
  */
 static void print_help(char* exe_name);
 
+
+/**
+ * @brief   Maneja los datos que envía el servidor.
+ *
+ * Recibe mensajes del servidor hasta que este corta la conexión.
+ *
+ * @param client    Cliente que recibe los datos, previamente conectado al servidor.
+ */
 void handle_data(Client client);
+
+
 
 int main(int argc, char** argv){
 	Client client;
@@ -53,6 +64,8 @@ int main(int argc, char** argv){
         .server_ip = server_ip,
         .server_port = &server_port
     };
+
+    set_colors();
 	
     process_args(args);
 
@@ -72,16 +85,10 @@ void handle_data(Client client){
 		ssize_t recv_bytes=0;
 		char server_message[MAX_BYTES_RECV];
 		
-		while((recv_bytes = recv(client.socket, server_message, MAX_BYTES_RECV,0)) > 0){
+		while((recv_bytes = recv(client.socket, server_message, MAX_BYTES_RECV, 0)) != 0){   /* Recibir hasta que se corte la conexión */
+            if (recv_bytes < 0) fail("Error en la recepción del mensaje");
 			printf("Mensaje recibido: %s\nHan sido recibidos %ld bytes.\n", server_message, recv_bytes);
 		}
-		/*if ((recv_bytes = recv(client.socket, server_message, MAX_BYTES_RECV,0)) < 0) {
-		perror("No se recibió el mensaje");
-		exit(EXIT_FAILURE);
-		} */
-		
-		/*printf("Mensaje recibido: %s. Han sido recibidos %ld bytes.\n", server_message, recv_bytes);*/
-
 }
 
 static void print_help(char* exe_name){
