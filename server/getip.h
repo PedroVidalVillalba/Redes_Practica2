@@ -3,6 +3,7 @@
 
 #include <stdlib.h>
 
+/* Nombre de la pagína web que proporciona la IP pública */
 #define NODE_NAME "api.ipify.org"
 
 /**

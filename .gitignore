@@ -11,4 +11,6 @@ servidormay
 # Text files
 *.txt
 *.TXT
-
+# Log files
+log
+*.log

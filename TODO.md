@@ -1,8 +1,6 @@
 ## Cosas que quedan por hacer
-- Terminar las funcionalidades principales obligatorias de la entrega.
-- Hacer las funcionalidades optativas de la entrega.
-- Escribir el menú de ayuda y dejar claras los argumentos por terminal que acepta y necesita cada programa.
-- Documentar de forma clara todas las funciones.
-- Añadir un log en el servidor.
+- Terminar de escribir el informe.
+- Tocar el cliente y servidor de mayúsculas para que puedan leer líneas más grandes (getline las puede alojar dinámicamente)
 - Escribir el README para que se entienda la estructura del proyecto de forma clara.
+- Hacer las funcionalidades optativas de la entrega.
 - Probar que todo funcione correctamente.
