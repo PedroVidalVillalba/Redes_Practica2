@@ -9,6 +9,7 @@
 #include <signal.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <sys/wait.h>
 
 #include "server.h"
 #include "getip.h"
@@ -40,6 +41,8 @@ static void signal_handler(int signum) {
         case SIGTERM:
             terminate = 1;          /* Marca que el programa debe terminar */
             break;
+	case SIGCHLD:
+	    while(wait(NULL) > 0);    
         default:
             break;
     }
@@ -141,6 +144,12 @@ Server create_server(int domain, int type, int protocol, uint16_t port, int back
     if (fcntl(server.socket, F_SETOWN, getpid()) < 0) {
         log_printf(ANSI_COLOR_RED "Error al configurar el autoenvío de señales en el socket.\n" ANSI_COLOR_RESET);
         fail("No se pudo configurar el autoenvío de señales en el socket");
+    
+   }
+
+    if(signal(SIGCHLD, signal_handler) == SIG_ERR){
+    	
+        log_printf(ANSI_COLOR_RED "Error al establecer el manejo de la señal SIGCHLD.\n" ANSI_COLOR_RESET);
     }
 
     if (signal(SIGIO, signal_handler) == SIG_ERR) {

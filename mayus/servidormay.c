@@ -80,6 +80,7 @@ int main(int argc, char** argv) {
     uint16_t port;
     int backlog;
     char* logfile;
+    pid_t child;
     struct arguments args = {
         .argc = argc,
         .argv = argv,
@@ -102,14 +103,27 @@ int main(int argc, char** argv) {
         listen_for_connection(server, &client);
         if (client.socket == -1) continue;  /* Falsa alarma, no había conexiones pendientes o se recibió una señal de terminación */
 
-        handle_connection(server, client);
+	if((child=fork()) == 0){ /* Si estamos en el hijo*/
+	
+	    printf("Aqui el proceso: %u atendiendo al cliente %s", getpid(), client.ip);
+	    
+            handle_connection(server, client);
+
+	    client.socket = -1; /* Usamos socket como flag dentro del hijo para que cuando llamemos a la funcion close_server() libere las variables correctamente pero no cierre el servidor*/
+
+	    terminate = 1; /* Queremos qur eo hijo salga del bucle */ 
+	    	
+	}
 
         printf("\nCerrando la conexión del cliente %s:%u.\n\n", client.ip, client.port);
         log_printf("Cerrando la conexión del cliente %s:%u.\n", client.ip, client.port);
         close_client(&client);  /* Ya hemos gestionado al cliente, podemos olvidarnos de él */
     }
-
-    printf("\nCerrando el servidor y saliendo...\n");
+    if(child != 0){ /*Si estoy en el padre aviso de que voy a cerrar el servidor, si estoy en el NO se llega a cerrar realmente el servidor, la llamada a close_server() sirve para una correcta liberación de la memoria*/
+    
+        printf("\nCerrando el servidor y saliendo...\n");
+    
+    }	
     close_server(&server);
 
     exit(EXIT_SUCCESS);
