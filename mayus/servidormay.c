@@ -11,8 +11,7 @@
 #include "server.h"
 #include "loging.h"
 
-#define MESSAGE_SIZE 10000
-#define MAX_BYTES_RECV 128
+#define MAX_BYTES_RECV 2056
 #define DEFAULT_PORT 8000
 #define DEFAULT_BACKLOG 16
 #define DEFAULT_LOG "log"
