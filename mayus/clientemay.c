@@ -126,6 +126,9 @@ void handle_data(Client client, char* input_file_name){
         if( (recv_bytes = recv(client.socket, recv_buffer, MAX_BYTES_RECV,0)) < 0) fail("No se pudo recibir el mensaje");
 
         fprintf(fp_output, "%s", recv_buffer);
+        /**** < CAMBIO PARA EL EJERCICIO 3 > ****/
+        sleep(1);
+        /**** </ CAMBIO PARA EL EJERCICIO 3 > ****/
     }
     
     /* Cerramos los archivos al salir */
