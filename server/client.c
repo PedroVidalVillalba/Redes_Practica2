@@ -9,8 +9,10 @@
 
 #include "client.h"
 #include "getip.h"
+#include "loging.h"
 
 #define BUFFER_LEN 64
+
 
 /**
  * @brief   Crea un cliente.
@@ -73,10 +75,7 @@ Client create_client(int domain, int type, int protocol, char* server_ip, uint16
     }
 
     /* Crear el socket del cliente */
-    if ( (client.socket = socket(domain, type, protocol)) < 0) {
-        perror("No se pudo crear el socket");
-        exit(EXIT_FAILURE);
-    }
+    if ( (client.socket = socket(domain, type, protocol)) < 0) fail("No se pudo crear el socket");
 
     return client;
 }
@@ -91,10 +90,7 @@ Client create_client(int domain, int type, int protocol, char* server_ip, uint16
  * @param client    Cliente a conectar.
  */
 void connect_to_server(Client client) {
-    if (connect(client.socket, (struct sockaddr *) &(client.server_address), sizeof(struct sockaddr_in)) < 0) {
-        perror("No se pudo conetar con el servidor");
-        exit(EXIT_FAILURE);
-    }
+    if (connect(client.socket, (struct sockaddr *) &(client.server_address), sizeof(struct sockaddr_in)) < 0) fail("No se pudo conetar con el servidor");
 
     printf("Conectado con éxito al servidor %s por el puerto %d\n", client.server_ip, client.server_port);
 
@@ -113,10 +109,7 @@ void connect_to_server(Client client) {
 void close_client(Client* client) {
     /* Cerrar el socket del cliente */
     if (client->socket != -1) {
-        if (close(client->socket)) {
-            perror("No se pudo cerrar el socket del cliente");
-            exit(EXIT_FAILURE);
-        }
+        if (close(client->socket)) fail("No se pudo cerrar el socket del cliente");
     }
 
     if (client->hostname) free(client->hostname);
