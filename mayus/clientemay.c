@@ -9,7 +9,7 @@
 #include "client.h"
 #include "loging.h"
 
-#define NUM_BYTES_RECV 128
+#define MAX_BYTES_RECV 2056
 #define FILENAME_LEN 128
 
 
@@ -91,7 +91,7 @@ int main(int argc,char **argv){
 void handle_data(Client client, char* input_file_name){
     ssize_t sent_bytes = 0, recv_bytes = 0;
     FILE *fp_input, *fp_output;
-    char recv_buffer[NUM_BYTES_RECV];
+    char recv_buffer[MAX_BYTES_RECV];
     size_t buffer_size; /* Necesitamos una variable con el tamaño del buffer para getline */
     char* send_buffer;  /* Buffer para guardar las líneas del archivo a enviar. Como se usa getline, tiene que asignarse dinamicamente */
 
@@ -104,7 +104,7 @@ void handle_data(Client client, char* input_file_name){
     if ( (sent_bytes = send(client.socket, input_file_name, strlen(input_file_name) + 1, 0)) < 0) fail("No se pudo enviar el mensaje");
 
     /* Esperamos a recibir la linea */
-    if( (recv_bytes = recv(client.socket, recv_buffer, NUM_BYTES_RECV, 0)) < 0) fail("No se pudo recibir el mensaje");
+    if( (recv_bytes = recv(client.socket, recv_buffer, MAX_BYTES_RECV, 0)) < 0) fail("No se pudo recibir el mensaje");
 
     /* Recibido el nombre del archivo en mayúsculas */
     /* Abrimos en modo escritura el archivo */    
@@ -112,7 +112,7 @@ void handle_data(Client client, char* input_file_name){
 
     /* Procesamiento y envio del archivo */
     /* Inicializamos el buffer de envío, en el que leeremos del archivo con getline */
-    buffer_size = NUM_BYTES_RECV;
+    buffer_size = MAX_BYTES_RECV;
     send_buffer = (char *) calloc(buffer_size, sizeof(char));
     while (!feof(fp_input)) {
         /* Leemos hasta que lo que devuelve getline es EOF, cerramos la conexión en ese caso */
@@ -123,7 +123,7 @@ void handle_data(Client client, char* input_file_name){
         if ( (sent_bytes = send(client.socket, send_buffer, strlen(send_buffer) + 1, 0)) < 0) fail("No se pudo enviar el mensaje");
 
         /*Esperamos a recibir la linea*/
-        if( (recv_bytes = recv(client.socket, recv_buffer, NUM_BYTES_RECV,0)) < 0) fail("No se pudo recibir el mensaje");
+        if( (recv_bytes = recv(client.socket, recv_buffer, MAX_BYTES_RECV,0)) < 0) fail("No se pudo recibir el mensaje");
 
         fprintf(fp_output, "%s", recv_buffer);
     }
