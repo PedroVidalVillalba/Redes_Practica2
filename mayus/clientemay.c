@@ -115,8 +115,7 @@ void handle_data(Client client, char* input_file_name){
     buffer_size = MAX_BYTES_RECV;
     send_buffer = (char *) calloc(buffer_size, sizeof(char));
     while (!feof(fp_input)) {
-    
-        sleep(5); /*Dormimos al cliente para que de tiempo a lanzar otros clientes */
+        sleep(2); /* Dormimos al cliente para que de tiempo a lanzar otros clientes */
         /* Leemos hasta que lo que devuelve getline es EOF, cerramos la conexión en ese caso */
         if(getline(&send_buffer, &buffer_size, fp_input) == EOF){ /* Escaneamos la linea hasta el final del archivo */
             shutdown(client.socket, SHUT_RD);   /* Le decimos al servidor que pare de recibir */
@@ -129,7 +128,7 @@ void handle_data(Client client, char* input_file_name){
 
         fprintf(fp_output, "%s", recv_buffer);
     }
-    
+
     /* Cerramos los archivos al salir */
     if (fclose(fp_input)) fail("No se pudo cerrar el archivo de lectura");
     if (fclose(fp_output)) fail("No se pudo cerrar el archivo de escritura");
