@@ -107,11 +107,11 @@ int main(int argc, char** argv) {
 	
 	    printf("Aqui el proceso: %u atendiendo al cliente %s", getpid(), client.ip);
 	    
-            handle_connection(server, client);
+        handle_connection(server, client);
 
 	    client.socket = -1; /* Usamos socket como flag dentro del hijo para que cuando llamemos a la funcion close_server() libere las variables correctamente pero no cierre el servidor*/
 
-	    terminate = 1; /* Queremos qur eo hijo salga del bucle */ 
+	    terminate = 1; /* Queremos que el hijo salga del bucle */ 
 	    	
 	}
 
