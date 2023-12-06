@@ -103,17 +103,13 @@ int main(int argc, char** argv) {
         listen_for_connection(server, &client);
         if (client.socket == -1) continue;  /* Falsa alarma, no había conexiones pendientes o se recibió una señal de terminación */
 
-	if((child=fork()) == 0){ /* Si estamos en el hijo*/
-	
-	    printf("Aqui el proceso: %u atendiendo al cliente %s", getpid(), client.ip);
-	    
-        handle_connection(server, client);
 
-	    client.socket = -1; /* Usamos socket como flag dentro del hijo para que cuando llamemos a la funcion close_server() libere las variables correctamente pero no cierre el servidor*/
-
-	    terminate = 1; /* Queremos que el hijo salga del bucle */ 
-	    	
-	}
+        /* Creamos un proceso hijo para que maneje la conexión de este cliente */
+        if ( (child = fork()) == 0 ) { /* Si estamos en el hijo*/
+            printf("Aqui el proceso: %u atendiendo al cliente %s", getpid(), client.ip);
+            handle_connection(server, client);
+            terminate = 1; /* Queremos que el hijo salga del bucle */ 
+        }
 
         printf("\nCerrando la conexión del cliente %s:%u.\n\n", client.ip, client.port);
         log_printf("Cerrando la conexión del cliente %s:%u.\n", client.ip, client.port);

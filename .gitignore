@@ -14,3 +14,5 @@ servidormay
 # Log files
 log
 *.log
+# ZIP files
+*.zip

@@ -41,8 +41,9 @@ static void signal_handler(int signum) {
         case SIGTERM:
             terminate = 1;          /* Marca que el programa debe terminar */
             break;
-	case SIGCHLD:
-	    while(wait(NULL) > 0);    
+        case SIGCHLD:
+            while(waitpid(WAIT_ANY, NULL, WNOHANG) > 0);    
+            break;
         default:
             break;
     }
